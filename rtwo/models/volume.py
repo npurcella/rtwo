@@ -1,6 +1,5 @@
 """
 Atmosphere service volume.
-
 """
 from abc import ABCMeta
 
@@ -14,7 +13,6 @@ class BaseVolume(object):
 
 
 class MockVolume(BaseVolume):
-
     def __init__(self, volume_id, provider):
         self._volume = None
         self.id = volume_id
@@ -62,20 +60,24 @@ class Volume(BaseVolume):
         return str(self)
 
     def __str__(self):
-        return reduce(lambda x, y: x+y,
-                      map(unicode, [self.__class__, " ", self.json()]))
+        return reduce(
+            lambda x, y: x + y,
+            map(unicode,
+                [self.__class__, " ", self.json()]))
 
     def __repr__(self):
         return str(self)
 
     def json(self):
-        return {'id': self.id,
-                'alias': self.alias,
-                'attachment_set': self.attachment_set,
-                'extra': self.extra,
-                'name': self.name,
-                'provider': self.provider.name,
-                'size': self.size}
+        return {
+            'id': self.id,
+            'alias': self.alias,
+            'attachment_set': self.attachment_set,
+            'extra': self.extra,
+            'name': self.name,
+            'provider': self.provider.name,
+            'size': self.size
+        }
 
 
 class AWSVolume(Volume):

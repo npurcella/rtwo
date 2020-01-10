@@ -1,6 +1,5 @@
 """
 Atmosphere service meta.
-
 DEPRECATION NOTE: This file should be removed. All relevant/useful work should be transferred out of this file.
 """
 from abc import ABCMeta
@@ -60,16 +59,20 @@ class Meta(BaseMeta):
     @classmethod
     def get_metas(cls):
         super_metas = {}
-        map(super_metas.update, [AWSProvider.metaCls.metas,
-                                 EucaProvider.metaCls.metas,
-                                 OSProvider.metaCls.metas])
+        map(super_metas.update, [
+            AWSProvider.metaCls.metas, EucaProvider.metaCls.metas,
+            OSProvider.metaCls.metas
+        ])
         return super_metas
 
     def test_links(self):
         return active_instances(self.driver.list_instances())
 
-    def _split_creds(self, creds, default_key,
-                     default_secret, default_tenant=None):
+    def _split_creds(self,
+                     creds,
+                     default_key,
+                     default_secret,
+                     default_tenant=None):
         key = creds.get('key', default_key)
         secret = creds.get('secret', default_secret)
         # Use the project or tenant name.
@@ -85,8 +88,7 @@ class Meta(BaseMeta):
 
     def all_instances(self):
         return self.provider.instanceCls.get_instances(
-            self.admin_driver._connection.ex_list_all_instances(),
-            self)
+            self.admin_driver._connection.ex_list_all_instances(), self)
 
     def reset(self):
         Meta.reset()
@@ -100,17 +102,20 @@ class Meta(BaseMeta):
         return str(self)
 
     def __str__(self):
-        return reduce(lambda x, y: x+y, map(unicode, [self.__class__,
-                                                      " ",
-                                                      self.json()]))
+        return reduce(
+            lambda x, y: x + y,
+            map(unicode,
+                [self.__class__, " ", self.json()]))
 
     def __repr__(self):
         return str(self)
 
     def json(self):
-        return {'driver': self.driver,
-                'identity': self.identity,
-                'provider': self.provider.name}
+        return {
+            'driver': self.driver,
+            'identity': self.identity,
+            'provider': self.provider.name
+        }
 
 
 class AWSMeta(Meta):
@@ -122,8 +127,7 @@ class AWSMeta(Meta):
             return self.driver
         logger.debug(self.provider)
         logger.debug(type(self.provider))
-        identity = AWSIdentity(self.provider,
-                               settings.AWS_KEY,
+        identity = AWSIdentity(self.provider, settings.AWS_KEY,
                                settings.AWS_SECRET)
         driver = AWSDriver(self.provider, identity)
         return driver
@@ -137,8 +141,7 @@ class EucaMeta(Meta):
     provider = EucaProvider
 
     def create_admin_driver(self, creds=None):
-        key, secret = self._split_creds(creds,
-                                        settings.EUCA_ADMIN_KEY,
+        key, secret = self._split_creds(creds, settings.EUCA_ADMIN_KEY,
                                         settings.EUCA_ADMIN_SECRET)
         identity = EucaIdentity(self.provider, key, secret)
         driver = EucaDriver(self.provider, identity)
@@ -170,8 +173,7 @@ class OSMeta(Meta):
                                     key,
                                     secret,
                                     ex_tenant_name=tenant)
-        admin_driver = OSDriver(admin_provider,
-                                admin_identity,
+        admin_driver = OSDriver(admin_provider, admin_identity,
                                 **provider_creds)
         return admin_driver
 
@@ -197,12 +199,11 @@ class OSMeta(Meta):
             logger.warn("Could not find a CPU value for size %s" % size)
             cpu_count = -1
         if cpu_count > 0:
-            max_by_cpu = float(cpu_total)/float(size.cpu)
+            max_by_cpu = float(cpu_total) / float(size.cpu)
         else:
             # I don't know about this?
             max_by_cpu = sys.maxint
-        return self.total_remaining(max_by_cpu, cpu_total,
-                                    cpu_used, cpu_count)
+        return self.total_remaining(max_by_cpu, cpu_total, cpu_used, cpu_count)
 
     def _ram_stats(self, size, ram_total, ram_used, ram_overcommit):
         if ram_overcommit > 0:
@@ -220,26 +221,25 @@ class OSMeta(Meta):
             max_by_disk = float(disk_total) / float(size._size.disk)
         else:
             max_by_disk = sys.maxint
-        return self.total_remaining(max_by_disk, disk_total,
-                                    disk_used, size._size.disk)
+        return self.total_remaining(max_by_disk, disk_total, disk_used,
+                                    size._size.disk)
 
     def _calculate_overcommits(self, sizes, remove_totals):
         instances = self.admin_driver.list_all_instances()
-        size_map = {size.id:size for size in sizes}
+        size_map = {size.id: size for size in sizes}
         for instance in instances:
-            if instance.extra['status'] in ['suspended','shutoff']:
+            if instance.extra['status'] in ['suspended', 'shutoff']:
                 #oc == OverCommited
                 oc_size = size_map.get(instance.size.id)
                 if not oc_size:
                     logger.warn("Size %s NOT found in list of sizes. Cannot"
-                                " remove instance %s from calculation"
-                                % (instance.size.id, instance.id))
+                                " remove instance %s from calculation" %
+                                (instance.size.id, instance.id))
                     continue
                 remove_totals['cpu'] = remove_totals['cpu'] + oc_size.cpu
                 remove_totals['ram'] = remove_totals['ram'] + oc_size.ram
                 remove_totals['disk'] = remove_totals['disk'] + oc_size.disk
         return remove_totals
-
 
     def _instance_capacity_on_node(self, size, node):
         pass
@@ -249,9 +249,11 @@ class OSMeta(Meta):
 
     def _sum_active_compute_nodes(self):
         acs = self._active_compute_nodes()
-        return {"total_vcpus": sum([ac["vcpus"] for ac in acs]),
-                "total_memory_mb": sum([ac["memory_mb"] for ac in acs]),
-                "total_local_gb": sum(ac["local_gb"] for ac in acs)}
+        return {
+            "total_vcpus": sum([ac["vcpus"] for ac in acs]),
+            "total_memory_mb": sum([ac["memory_mb"] for ac in acs]),
+            "total_local_gb": sum(ac["local_gb"] for ac in acs)
+        }
 
     def _active_compute_nodes(self):
         active_nodes = set(
@@ -311,6 +313,7 @@ class OSMeta(Meta):
         occ["disk"] += size.ephemeral
         occ["instances"].append(instance)
 
+
 # for host, stats in rahr.items():
 #         if not host:
 #             continue
@@ -326,11 +329,9 @@ class OSMeta(Meta):
 #             max_mem,
 #             stats["mem"]/(1.0*max_mem)))
 
-
     def new_occupancy(self, overcommited=True):
         """
         Calculate occupancy using an admin account.
-
         Get size, instance and compute node data then
         calculate a better occupancy than _ex_hypervisor_statistics.
         Our statistics only look at instance states that use resources
@@ -351,40 +352,30 @@ class OSMeta(Meta):
         """
         occ = self.admin_driver._connection\
                                .ex_hypervisor_statistics()
-        remove_totals = {
-                'cpu':0,
-                'ram':0,
-                'disk':0
-            }
+        remove_totals = {'cpu': 0, 'ram': 0, 'disk': 0}
         sizes = self.admin_driver.list_sizes()
         if not overcommited:
             self._calculate_overcommits(sizes, remove_totals)
 
         for size in sizes:
-            total_cpu, remaining_cpu = self._cpu_stats(size,
-                                                      occ['vcpus'],
-                                                      occ['vcpus_used'],
-                                                      remove_totals['cpu'])
-        
-            total_ram, remaining_ram = self._ram_stats(size,
-                                                       occ['memory_mb'],
+            total_cpu, remaining_cpu = self._cpu_stats(size, occ['vcpus'],
+                                                       occ['vcpus_used'],
+                                                       remove_totals['cpu'])
+
+            total_ram, remaining_ram = self._ram_stats(size, occ['memory_mb'],
                                                        occ['memory_mb_used'],
                                                        remove_totals['ram'])
-            total_disk, remaining_disk = self._disk_stats(size,
-                                                         occ['local_gb'],
-                                                         occ['local_gb_used'],
-                                                         remove_totals['disk'])
-            remaining = min(remaining_cpu,
-                            remaining_ram,
-                            remaining_disk)
+            total_disk, remaining_disk = self._disk_stats(
+                size, occ['local_gb'], occ['local_gb_used'],
+                remove_totals['disk'])
+            remaining = min(remaining_cpu, remaining_ram, remaining_disk)
             if remaining == remaining_cpu:
                 total = total_cpu
             elif remaining == remaining_ram:
                 total = total_ram
             else:
                 total = total_disk
-            size.extra['occupancy'] = {'total': total,
-                                       'remaining': remaining}
+            size.extra['occupancy'] = {'total': total, 'remaining': remaining}
         return sizes
 
     def add_metadata_deployed(self, machine):
@@ -405,13 +396,12 @@ class OSMeta(Meta):
         machine_metadata = self.admin_driver._connection\
                                             .ex_get_image_metadata(machine)
         if machine_metadata.get("deployed"):
-            self.admin_driver._connection.ex_delete_image_metadata(machine,
-                                                                   "deployed")
+            self.admin_driver._connection.ex_delete_image_metadata(
+                machine, "deployed")
 
     def stop_all_instances(self, destroy=False):
         """
         Stop all instances and delete tenant networks for all users.
-
         To destroy instances instead of stopping them use the destroy
         keyword (destroy=True).
         """
@@ -427,8 +417,8 @@ class OSMeta(Meta):
         if destroy:
             for username in os_driver.list_usergroup_names():
                 tenant_name = username
-                os_driver.network_manager.delete_tenant_network(username,
-                                                                tenant_name)
+                os_driver.network_manager.delete_tenant_network(
+                    username, tenant_name)
         return True
 
     def destroy_all_instances(self):
@@ -441,8 +431,8 @@ class OSMeta(Meta):
         os_driver = OSAccountDriver()
         for username in os_driver.list_usergroup_names():
             tenant_name = username
-            os_driver.network_manager.delete_tenant_network(username,
-                                                            tenant_name)
+            os_driver.network_manager.delete_tenant_network(
+                username, tenant_name)
         return True
 
     def all_instances(self, **kwargs):

@@ -56,16 +56,19 @@ def test_link(address):
         if response.status_code in [200, 302]:
             return True
         return False
-    except requests.ConnectionError, error:
+    except requests.ConnectionError as error:
         err_code, err_reason = error.args[0].reason
-        logger.warn("Link test failed: URL:%s Error:%s - %s" % (address, err_code, err_reason))
+        logger.warn("Link test failed: URL:%s Error:%s - %s" %
+                    (address, err_code, err_reason))
         return False
     except Exception as e:
         logger.exception(e)
         return False
 
+
 def active_instances(instances):
     return active_instances_naive(instances)
+
 
 def active_instances_naive(instances):
     test_results = {}
@@ -73,11 +76,11 @@ def active_instances_naive(instances):
         if instance.ip is not None and instance.extra['status'] == 'active':
             link_results = test_instance_links(instance.alias, instance.ip)
         else:
-            logger.info("Not testing %s:%s-%s" % (instance,
-                                               instance.ip,
-                                               instance.extra['status']))
+            logger.info("Not testing %s:%s-%s" %
+                        (instance, instance.ip, instance.extra['status']))
         test_results.update(link_results)
     return test_results
+
 
 def active_instances_threaded(instances):
     """
@@ -95,8 +98,9 @@ def active_instances_threaded(instances):
     tasks = multiprocessing.Queue()
     results = multiprocessing.Queue()
 
-    processes = [LinkTestProcess(tasks, results)
-                 for i in xrange(num_processes)]
+    processes = [
+        LinkTestProcess(tasks, results) for i in xrange(num_processes)
+    ]
     for p in processes:
         p.start()
         # logger.info("Started %d processes" % (num_processes,))

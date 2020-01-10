@@ -1,6 +1,5 @@
 """
 Atmosphere service provider.
-
 """
 from abc import ABCMeta, abstractmethod
 
@@ -18,7 +17,6 @@ from rtwo.exceptions import ServiceException
 def lc_provider_id(provider):
     """
     Get the libcloud Provider using our service provider.
-
     Return the libcloud.compute Provider value.
     """
     p = None
@@ -76,7 +74,6 @@ class BaseProvider(object):
 
 
 class Provider(BaseProvider):
-
     def __init__(self, url=None, identifier=None):
         """
         :param url: url to use for this provider.
@@ -90,7 +87,6 @@ class Provider(BaseProvider):
     def set_options(self, provider_credentials):
         """
         Get provider specific options.
-
         Return provider specific options in a dict.
         """
         self.options = {}
@@ -143,7 +139,6 @@ class AWSProvider(Provider):
     def set_options(self, provider_credentials):
         """
         Get provider specific options.
-
         Return provider specific options in a dict.
         """
         self.options = {}
@@ -154,7 +149,6 @@ class AWSProvider(Provider):
     def get_driver(self, identity, **provider_credentials):
         """
         Get the libcloud driver using our service identity.
-
         Return the libcloud.compute driver class.
         """
         self.identity = identity
@@ -199,13 +193,14 @@ class EucaProvider(Provider):
     def set_options(self, provider_credentials):
         """
         Get provider specific credentials.
-
         Return any provider specific credentials in a dict.
         """
-        self.options = {'host': '128.196.172.136',
-                        'secure': False,
-                        'port': 8773,
-                        'path': '/services/Eucalyptus'}
+        self.options = {
+            'host': '128.196.172.136',
+            'secure': False,
+            'port': 8773,
+            'path': '/services/Eucalyptus'
+        }
         # Options default to provider
         self.options.update(provider_credentials)
         self.options.update(self.identity.credentials)
@@ -214,7 +209,6 @@ class EucaProvider(Provider):
     def get_driver(self, identity, **provider_credentials):
         """
         Get the libcloud driver using our service identity.
-
         Return the libcloud.compute driver class.
         """
         self.lc_driver = Eucalyptus_Esh_NodeDriver
@@ -233,29 +227,30 @@ class EucaProvider(Provider):
 class MockProvider(Provider):
     name = 'Mock'
     location = 'MOCK'
+
     def set_options(self, provider_credentials):
         """
         Get provider specific options.
-
         Return provider specific options in a dict.
         """
-        self.options = {'secure': 'False',
-                        'ex_force_auth_version': '2.0_password',
-                        'ex_domain_name': None,
-                        'ex_force_auth_url': None,
-                        'ex_force_base_url': None,
-                        'ex_force_auth_token': None
-                       }
+        self.options = {
+            'secure': 'False',
+            'ex_force_auth_version': '2.0_password',
+            'ex_domain_name': None,
+            'ex_force_auth_url': None,
+            'ex_force_base_url': None,
+            'ex_force_auth_token': None
+        }
         return self.options
 
     def get_driver(self, identity, **provider_credentials):
         """
         Get the libcloud driver using our service identity.
-
         Return the libcloud.compute driver class.
         """
         self.set_options(provider_credentials)
         return None
+
 
 class OSProvider(Provider):
 
@@ -281,30 +276,37 @@ class OSProvider(Provider):
     def set_options(self, provider_credentials):
         """
         Get provider specific options.
-
         Return provider specific options in a dict.
         """
-        self.options = {'secure': 'False',
-                        'ex_force_auth_version': '2.0_password',
-                        'ex_domain_name': None,
-                        'ex_force_auth_url': None,
-                        'ex_force_base_url': None,
-                        'ex_force_auth_token': None
-                       }
+        self.options = {
+            'secure': 'False',
+            'ex_force_auth_version': '2.0_password',
+            'ex_domain_name': None,
+            'ex_force_auth_url': None,
+            'ex_force_base_url': None,
+            'ex_force_auth_token': None
+        }
         self.options.update(provider_credentials)
         self.options.update(self.identity.credentials)
         #Basic validation to avoid 'hard-to-reason-about-errors'
-        if self.options['ex_force_auth_version'] == '2.0_password' and 'tokens' not in self.options['ex_force_auth_url']:
-           raise ValueError("Conflicting options -- If you are using '2.0_password' for Keystone Authentication, your auth_url should include '/v2.0/tokens' in addition to the http(s)://hostname:port")
-        elif self.options['ex_force_auth_version'] == '3.x_password' and 'tokens' in self.options['ex_force_auth_url']:
-           raise ValueError("Conflicting options -- If you are using '3.x_password' for Keystone Authentication, your auth_url should NOT include '/v2.0/tokens'. Instead use: http(s)://hostname:port")
+        if self.options[
+                'ex_force_auth_version'] == '2.0_password' and 'tokens' not in self.options[
+                    'ex_force_auth_url']:
+            raise ValueError(
+                "Conflicting options -- If you are using '2.0_password' for Keystone Authentication, your auth_url should include '/v2.0/tokens' in addition to the http(s)://hostname:port"
+            )
+        elif self.options[
+                'ex_force_auth_version'] == '3.x_password' and 'tokens' in self.options[
+                    'ex_force_auth_url']:
+            raise ValueError(
+                "Conflicting options -- If you are using '3.x_password' for Keystone Authentication, your auth_url should NOT include '/v2.0/tokens'. Instead use: http(s)://hostname:port"
+            )
 
         return self.options
 
     def get_driver(self, identity, **provider_credentials):
         """
         Get the libcloud driver using our service identity.
-
         Return the libcloud.compute driver class.
         """
         self.identity = identity

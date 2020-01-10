@@ -15,20 +15,18 @@ dependencies, requirements = read_requirements('requirements.txt')
 long_description = """
 rtwo %s
 A unified interface into multiple cloud providers.
-
 To install use pip install git+git://git@github.com:iPlantCollaborativeOpenSource/rtwo.git
-
 ----
-
 %s
-
 ----
-
 For more information, please see: https://github.com/iPlantCollaborativeOpenSource/rtwo
 """ % (get_version('short'), readme)
 
+TEST_PATHS = [
+    'rtwo/test',
+]
 
-TEST_PATHS = ['rtwo/test',]
+
 class TestCommand(Command):
     description = "run test suite"
     user_options = []
@@ -52,7 +50,6 @@ class TestCommand(Command):
                   'to run the tests. You can install it using pip: '
                   'pip install mock')
             sys.exit(1)
-
 
         status = self._run_tests()
         sys.exit(status)
@@ -79,12 +76,14 @@ class TestCommand(Command):
         for test_path in TEST_PATHS:
             for t in glob(pjoin(self._dir, test_path, 'test_*.py')):
                 testfiles.append('.'.join(
-                    [test_path.replace('/', '.'), splitext(basename(t))[0]]))
+                    [test_path.replace('/', '.'),
+                     splitext(basename(t))[0]]))
         tests = TestLoader().loadTestsFromNames(testfiles)
 
         t = TextTestRunner(verbosity=2)
         res = t.run(tests)
         return not res.wasSuccessful()
+
 
 setuptools.setup(
     name='rtwo',
@@ -102,15 +101,12 @@ setuptools.setup(
         'test': TestCommand,
     },
     classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
+        "Development Status :: 4 - Beta", "Intended Audience :: Developers",
         "Intended Audience :: System Administrators",
         "Intended Audience :: Information Technology",
         "License :: OSI Approved :: BSD License",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python",
-        "Topic :: Software Development :: Libraries",
-        "Topic :: System",
+        "Operating System :: OS Independent", "Programming Language :: Python",
+        "Topic :: Software Development :: Libraries", "Topic :: System",
         "Topic :: System :: Clustering",
         "Topic :: System :: Distributed Computing",
         "Topic :: System :: Systems Administration"

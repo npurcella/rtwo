@@ -1,11 +1,8 @@
 """
 UserManager:
   Remote Openstack  Admin controls..
-
-
 DEPRECATION NOTE: THIS IS NOT THE ACCOUNTS/OPENSTACK.PY THAT YOU ARE LOOKING FOR!
 YOU WANT THE `accounts/openstack.py` in ATMOSPHERE!
-
 THIS FILE WILL GO AWAY VERY SOON!
 """
 from hashlib import sha1
@@ -31,11 +28,9 @@ class AccountDriver():
     def __init__(self, *args, **kwargs):
         network_args = {}
 
-
     def get_openstack_clients(self, username, password=None, tenant_name=None):
 
-        user_creds = self._get_openstack_credentials(username,
-                                                     password,
+        user_creds = self._get_openstack_credentials(username, password,
                                                      tenant_name)
         neutron = self.network_manager.new_connection(**user_creds)
         args = ()
@@ -59,60 +54,58 @@ class AccountDriver():
     def create_account(self, username, admin_role=False, max_quota=False):
         """
         Create (And Update 'latest changes') to an account
-
         """
         finished = False
         # Special case for admin.. Use the Openstack admin identity..
         if username == 'admin':
-            ident = self.create_openstack_identity('','','')
+            ident = self.create_openstack_identity('', '', '')
             return ident
         #Attempt account creation
         while not finished:
             try:
                 password = self.hashpass(username)
                 # Retrieve user, or create user & project
-                user = self.get_or_create_user(username, password,
-                                               True, admin_role)
+                user = self.get_or_create_user(username, password, True,
+                                               admin_role)
                 logger.debug(user)
                 project = self.get_project(username)
                 logger.debug(project)
                 roles = user.list_roles(project)
                 logger.debug(roles)
                 if not roles:
-                    self.user_manager.add_project_member(username,
-                                                         username,
-                                                         admin_role)
+                    self.user_manager.add_project_member(
+                        username, username, admin_role)
                 self.user_manager.build_security_group(
-                    user.name,
-                    self.hashpass(user.name),
-                    project.name)
+                    user.name, self.hashpass(user.name), project.name)
 
                 finished = True
 
             except OverLimit:
-                print 'Requests are rate limited. Pausing for one minute.'
+                print('Requests are rate limited. Pausing for one minute.')
                 time.sleep(60)  # Wait one minute
         #(user, group) = self.create_usergroup(username)
-        return (user, password, project) # was user
+        return (user, password, project)  # was user
 
     # Useful methods called from above..
-    def get_or_create_user(self, username, password=None,
-                           usergroup=True, admin=False):
+    def get_or_create_user(self,
+                           username,
+                           password=None,
+                           usergroup=True,
+                           admin=False):
         user = self.get_user(username)
         if user:
             return user
         user = self.create_user(username, password, usergroup, admin)
         return user
 
-    def create_user(self, username, password=None,
-                    usergroup=True, admin=False):
+    def create_user(self, username, password=None, usergroup=True,
+                    admin=False):
         if not password:
             password = self.hashpass(username)
         if usergroup:
-            (project, user, role) = self.user_manager.add_usergroup(username,
-                                                                    password,
-                                                                    True,
-                                                                    admin)
+            (project, user,
+             role) = self.user_manager.add_usergroup(username, password, True,
+                                                     admin)
         else:
             user = self.user_manager.add_user(username, password)
             project = self.user_manager.get_project(username)
@@ -165,15 +158,19 @@ class AccountDriver():
                     break
         return usergroups
 
-    def _get_openstack_credentials(self, username, password=None,
+    def _get_openstack_credentials(self,
+                                   username,
+                                   password=None,
                                    tenant_name=None):
         if not tenant_name:
             tenant_name = self.get_project_name_for(username)
         if not password:
             password = self.hashpass(tenant_name)
-        user_creds = {'auth_url': self.user_manager.nova.client.auth_url,
-                      'region_name': self.user_manager.nova.client.region_name,
-                      'username': username,
-                      'password': password,
-                      'tenant_name': tenant_name}
+        user_creds = {
+            'auth_url': self.user_manager.nova.client.auth_url,
+            'region_name': self.user_manager.nova.client.region_name,
+            'username': username,
+            'password': password,
+            'tenant_name': tenant_name
+        }
         return user_creds

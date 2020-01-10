@@ -1,28 +1,24 @@
 """
 OpenStack Network Admin Libarary
-
     Create:
     # To create a libcloud driver use the lc_driver_init method.
     # For instance with an rtwo OpenStack driver it's driver._connection.
     nm = NetworkManager.lc_driver_init(driver._connection)
-
     Use this library to:
       * manage networks within Neutron - openstack networking
 """
 import os
 import netaddr
 
-
 from threepio import logger
 
 from rtwo.drivers.common import _connect_to_heat, _connect_to_sahara, _connect_to_neutron, _connect_to_keystone_v3
 from neutronclient.common.exceptions import NeutronClientException, NotFound
 
-ROUTER_INTERFACE_NAMESPACE = (
-    'network:router_interface',
-    'network:router_interface_distributed',
-    'network:ha_router_replicated_interface'
-)
+ROUTER_INTERFACE_NAMESPACE = ('network:router_interface',
+                              'network:router_interface_distributed',
+                              'network:ha_router_replicated_interface')
+
 
 class NetworkManager(object):
 
@@ -31,7 +27,8 @@ class NetworkManager(object):
 
     def __init__(self, *args, **kwargs):
         self.default_router = kwargs.pop("router_name", None)
-        self.neutron, self.sahara, self.heat  = self.new_connection(*args, **kwargs)
+        self.neutron, self.sahara, self.heat = self.new_connection(
+            *args, **kwargs)
 
     def new_connection(self, *args, **kwargs):
         """
@@ -67,9 +64,8 @@ class NetworkManager(object):
             tenant_id = credentials.get('auth_tenant_id')
             return tenant_id
         except KeyError:
-            logger.warn(
-                "Key 'auth_tenant_id' no longer exists in"
-                "'get_credentials()'")
+            logger.warn("Key 'auth_tenant_id' no longer exists in"
+                        "'get_credentials()'")
             return None
 
     def get_credentials(self):
@@ -86,17 +82,23 @@ class NetworkManager(object):
     ##Admin-specific methods##
     def project_network_map(self):
         named_networks = self.find_network('-net', contains=True)
-        users_with_networks = [net['name'].replace('-net', '')
-                               for net in named_networks]
+        users_with_networks = [
+            net['name'].replace('-net', '') for net in named_networks
+        ]
         user_map = {}
         networks = self.list_networks()
         subnets = self.list_subnets()
         routers = self.list_routers()
         ports = self.list_ports()
         for user in users_with_networks:
-            my_nets = [net for net in networks if '%s-net' % user in net['name']]
+            my_nets = [
+                net for net in networks if '%s-net' % user in net['name']
+            ]
             net_ids = [n['id'] for n in my_nets]
-            my_subnets = [subnet for subnet in subnets if '%s-subnet' % user in subnet['name']]
+            my_subnets = [
+                subnet for subnet in subnets
+                if '%s-subnet' % user in subnet['name']
+            ]
             subnet_ids = [s['id'] for s in my_subnets]
             my_ports = []
             for port in ports:
@@ -117,14 +119,16 @@ class NetworkManager(object):
                 my_nets = my_nets[0]
             if len(my_subnets) == 1:
                 my_subnets = my_subnets[0]
-            user_map[user] = {'network': my_nets,
-                              'subnet': my_subnets,
-                              'public_interface': my_ports}
+            user_map[user] = {
+                'network': my_nets,
+                'subnet': my_subnets,
+                'public_interface': my_ports
+            }
             logger.debug("Added user %s" % user_map[user])
         return user_map
 
-    def get_user_neutron(self, username, password,
-                         project_name, auth_url, region_name):
+    def get_user_neutron(self, username, password, project_name, auth_url,
+                         region_name):
         user_creds = {
             'username': username,
             'password': password,
@@ -163,8 +167,9 @@ class NetworkManager(object):
         """
         networks = self.list_networks()
         if external_network_id is None:
-            external_networks = [net for net in networks
-                                 if net['router:external']]
+            external_networks = [
+                net for net in networks if net['router:external']
+            ]
             if not external_networks:
                 raise Exception("CONFIGURATION ERROR! No external networks"
                                 " found! Cannot associate floating ip without"
@@ -177,33 +182,43 @@ class NetworkManager(object):
                             " Create a fixed IP/port first!" % server_id)
         #TODO: Look at the network if it already has a floating ip, dont
         #re-create
-        body = {'floatingip': {
-                   'port_id': instance_ports[0]['id'],
-                   'floating_network_id': external_network_id
-               }}
+        body = {
+            'floatingip': {
+                'port_id': instance_ports[0]['id'],
+                'floating_network_id': external_network_id
+            }
+        }
         new_ip = self.neutron.create_floatingip(body)['floatingip']
 
         logger.info('Assigned Floating IP - %s:%s' % (server_id, new_ip))
         return new_ip
 
-    def create_port(self, server_id, network_id, subnet_id=None,
-            ip_address=None, tenant_id=None, mac_address=None, name=None):
+    def create_port(self,
+                    server_id,
+                    network_id,
+                    subnet_id=None,
+                    ip_address=None,
+                    tenant_id=None,
+                    mac_address=None,
+                    name=None):
         """
         Create a new (Fixed IP) Port between server id and the user network
         """
         if not name:
-            name = 'fixed_ip_%s' % (server_id,)
-        port_data = {'port':
-                {
-                    "tenant_id": tenant_id,
-                    "network_id":network_id,
-                    "device_id":server_id,
-                    "fixed_ips": [{"subnet_id":subnet_id, "ip_address":
-                        ip_address}],
-                    'admin_state_up':True,
-                    'name':name
-                }
+            name = 'fixed_ip_%s' % (server_id, )
+        port_data = {
+            'port': {
+                "tenant_id": tenant_id,
+                "network_id": network_id,
+                "device_id": server_id,
+                "fixed_ips": [{
+                    "subnet_id": subnet_id,
+                    "ip_address": ip_address
+                }],
+                'admin_state_up': True,
+                'name': name
             }
+        }
         if mac_address:
             port_data['port']['mac_address'] = mac_address
         if subnet_id and ip_address:
@@ -211,7 +226,6 @@ class NetworkManager(object):
             port_data['port'].pop('device_id')
         port_obj = self.neutron.create_port(port_data)
         return port_obj['port']
-
 
     def find_server_ports(self, server_id):
         """
@@ -226,7 +240,7 @@ class NetworkManager(object):
         floating_ips = self.neutron.list_floatingips()['floatingips']
         # Connect instances and floating_ips using ports.
         for fip in floating_ips:
-            port = filter(lambda(p): p['id'] == fip['port_id'], instance_ports)
+            port = filter(lambda p: p['id'] == fip['port_id'], instance_ports)
             if port:
                 fip['instance_id'] = port[0]['device_id']
         #logger.debug(floating_ips)
@@ -234,27 +248,29 @@ class NetworkManager(object):
 
     def rename_security_group(self, project, security_group_name=None):
         security_group_resp = self.neutron.list_security_groups(
-                tenant_id=project.id)
+            tenant_id=project.id)
         default_group_id = None
         for sec_group in security_group_resp['security_groups']:
             if 'default' in sec_group['name']:
                 default_group_id = sec_group['id']
                 break
         if not default_group_id:
-            raise Exception("Could not find the security group named 'default'")
+            raise Exception(
+                "Could not find the security group named 'default'")
         try:
             if not security_group_name:
                 security_group_name = project.name
             #FIXME: we don't actually name it?
             sec_group = self.neutron.update_security_group(
-                    default_group_id,
-                    {"security_group": {"description": security_group_name}})
+                default_group_id,
+                {"security_group": {
+                    "description": security_group_name
+                }})
             return sec_group
         except NeutronClientException:
             logger.exception("Problem updating description of 'default'"
                              "security group to %s" % project.name)
             raise
-
 
     ##Libcloud-Neutron Interface##
     @classmethod
@@ -264,8 +280,9 @@ class NetworkManager(object):
             'password': lc_driver.secret,
             'tenant_name': lc_driver._ex_tenant_name,
             #Libcloud requires /v2.0/tokens -- OS clients do not.
-            'auth_url': lc_driver._ex_force_auth_url.replace('/tokens',''),
-            'region_name': lc_driver._ex_force_service_region}
+            'auth_url': lc_driver._ex_force_auth_url.replace('/tokens', ''),
+            'region_name': lc_driver._ex_force_service_region
+        }
         lc_driver_args.update(kwargs)
         manager = NetworkManager(*args, **lc_driver_args)
         return manager
@@ -284,6 +301,7 @@ class NetworkManager(object):
                                 cidr=net.get('cidr', None),
                                 extra=net,
                                 driver=self)
+
     ##GET##
     def get_network(self, network_id):
         for net in self.neutron.list_networks()['networks']:
@@ -305,6 +323,7 @@ class NetworkManager(object):
             if port['id'] == port_id:
                 return port
         return None
+
     ##Easy Lists##
     def list_networks(self, *args, **kwargs):
         """
@@ -321,41 +340,57 @@ class NetworkManager(object):
 
     ##LOOKUP##
     def find_tenant_resources(self, tenant_id, instance_ids=[]):
-        networks = [net for net in self.list_networks()
-                    if net['tenant_id'] == tenant_id]
-        ports = [port for port in self.list_ports()
-                 if port['tenant_id'] == tenant_id
-                 or port['device_id'] in instance_ids]
-        subnets = [subnet for subnet in self.list_subnets()
-                    if subnet['tenant_id'] == tenant_id]
-        routers = [router for router in self.list_routers()
-                    if router['tenant_id'] == tenant_id]
-        return {"ports": ports,
-                "networks": networks,
-                "subnets": subnets,
-                "routers": routers
-               }
+        networks = [
+            net for net in self.list_networks()
+            if net['tenant_id'] == tenant_id
+        ]
+        ports = [
+            port for port in self.list_ports() if
+            port['tenant_id'] == tenant_id or port['device_id'] in instance_ids
+        ]
+        subnets = [
+            subnet for subnet in self.list_subnets()
+            if subnet['tenant_id'] == tenant_id
+        ]
+        routers = [
+            router for router in self.list_routers()
+            if router['tenant_id'] == tenant_id
+        ]
+        return {
+            "ports": ports,
+            "networks": networks,
+            "subnets": subnets,
+            "routers": routers
+        }
+
     def find_network(self, network_name, contains=False):
-        return [net for net in self.list_networks()
-                if network_name == net['name']
-                or (contains and network_name in net['name'])]
+        return [
+            net for net in self.list_networks()
+            if network_name == net['name'] or (
+                contains and network_name in net['name'])
+        ]
 
     def find_subnet(self, subnet_name, contains=False):
-        return [net for net in self.list_subnets()
-                if subnet_name == net['name']
-                or (contains and subnet_name in net['name'])]
+        return [
+            net for net in self.list_subnets()
+            if subnet_name == net['name'] or (
+                contains and subnet_name in net['name'])
+        ]
 
     def find_router(self, router_name):
-        return [net for net in self.list_routers()
-                if router_name == net['name']]
+        return [
+            net for net in self.list_routers() if router_name == net['name']
+        ]
 
     def find_ports_for_router(self, router_name):
         routers = self.find_router(router_name)
         if not routers:
             return []
         router_id = routers[0]['id']
-        return [port for port in self.list_ports()
-                if router_id == port['device_id']]
+        return [
+            port for port in self.list_ports()
+            if router_id == port['device_id']
+        ]
 
     def list_ports(self, **kwargs):
         """
@@ -402,15 +437,16 @@ class NetworkManager(object):
                 router_interfaces.append(port)
         return router_interfaces
 
-    def find_router_gateway(self,
-                            router_name,
+    def find_router_gateway(self, router_name,
                             external_network_name='ext_net'):
         network_id = self.find_network(external_network_name)[0]['id']
         routers = self.find_router(router_name)
         if not routers:
             return
-        return [r for r in routers if r.get('external_gateway_info') and
-                network_id in r['external_gateway_info'].get('network_id', '')]
+        return [
+            r for r in routers if r.get('external_gateway_info')
+            and network_id in r['external_gateway_info'].get('network_id', '')
+        ]
 
     ##ADD##
     def create_network(self, neutron, network_name):
@@ -423,30 +459,41 @@ class NetworkManager(object):
         network_obj = neutron.create_network({'network': network})
         return network_obj['network']
 
-
     def validate_cidr(self, cidr):
         logger.info("Attempting to validate cidr %s" % cidr)
         test_cidr_set = netaddr.IPSet([cidr])
-        all_subnets = [subnet for subnet in self.list_subnets()
-                       if subnet.get('ip_version', 4) != 6]
+        all_subnets = [
+            subnet for subnet in self.list_subnets()
+            if subnet.get('ip_version', 4) != 6
+        ]
         all_subnet_ips = [sn['allocation_pools'] for sn in all_subnets]
         for idx, subnet_ip_list in enumerate(all_subnet_ips):
             for subnet_ip_range in subnet_ip_list:
-                (start, end) = (subnet_ip_range['start'], subnet_ip_range['end'])
-                if start.startswith('10') or end.startswith('10') or start.startswith('192') or end.startswith('192'):
+                (start, end) = (subnet_ip_range['start'],
+                                subnet_ip_range['end'])
+                if start.startswith('10') or end.startswith(
+                        '10') or start.startswith('192') or end.startswith(
+                            '192'):
                     continue
-                test_range = netaddr.IPRange(
-                    subnet_ip_range['start'], subnet_ip_range['end'])
+                test_range = netaddr.IPRange(subnet_ip_range['start'],
+                                             subnet_ip_range['end'])
                 if len(test_range) > 1000:
                     continue
                 for ip in test_range:
                     if ip in test_cidr_set:
-                        raise Exception("Overlap detected for CIDR %s and Subnet %s" % (cidr, all_subnets[idx]))
+                        raise Exception(
+                            "Overlap detected for CIDR %s and Subnet %s" %
+                            (cidr, all_subnets[idx]))
         return True
 
-    def create_subnet(self, neutron, subnet_name,
-                      network_id, ip_version=4, cidr=None,
-                      dns_nameservers=[], subnet_pool_id=None):
+    def create_subnet(self,
+                      neutron,
+                      subnet_name,
+                      network_id,
+                      ip_version=4,
+                      cidr=None,
+                      dns_nameservers=[],
+                      subnet_pool_id=None):
         existing_subnets = self.find_subnet(subnet_name)
         if existing_subnets:
             logger.info('Subnet %s already exists' % subnet_name)
@@ -486,12 +533,15 @@ class NetworkManager(object):
         body = {"subnet_id": subnet['id']}
         interface_obj = self.neutron.add_interface_router(router['id'], body)
         if interface_name:
-            self.neutron.update_port(
-                    interface_obj['port_id'],
-                    {"port":{"name":interface_name}})
+            self.neutron.update_port(interface_obj['port_id'],
+                                     {"port": {
+                                         "name": interface_name
+                                     }})
         return interface_obj
 
-    def set_router_gateway(self, neutron, router_name,
+    def set_router_gateway(self,
+                           neutron,
+                           router_name,
                            external_network_name='ext_net'):
         """
         Must be run as admin
@@ -540,14 +590,14 @@ class NetworkManager(object):
                 return neutron\
                     .remove_interface_router(router_id,
                                              {"subnet_id": subnet_id})
-            except NeutronClientException, neutron_err:
+            except NeutronClientException as neutron_err:
                 if 'no interface on subnet' in neutron_err:
                     #Attempted to delete a connection that does not exist.
                     #Ignore this conflict.
                     return
                 logger.exception("Problem deleting interface router"
-                             " from router %s to subnet %s."
-                             % (router_id, subnet_id))
+                                 " from router %s to subnet %s." %
+                                 (router_id, subnet_id))
                 raise
 
     def delete_router(self, neutron, router_name):

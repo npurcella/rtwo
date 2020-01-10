@@ -1,6 +1,5 @@
 """
 Atmosphere service instance.
-
 """
 from libcloud.common.exceptions import BaseHTTPError
 from threepio import logger
@@ -17,7 +16,7 @@ class Instance(object):
     provider = None
     source = None
     machine = NotImplementedError(
-            "This field is deprecated. Use 'source' instead")
+        "This field is deprecated. Use 'source' instead")
     size = None
 
     def _get_source_for_instance(self, node, driver):
@@ -36,14 +35,15 @@ class Instance(object):
 
     def _get_source_snapshot(self, node):
         return None
+
     def _get_source_image(self, node):
         return None
+
     def _get_source_volume(self, node):
         return None
 
-
     def __init__(self, node, driver):
-        self.owner = None # Should be defined per-provider
+        self.owner = None  # Should be defined per-provider
         self._node = node
         self.id = node.id
         self.alias = node.id
@@ -80,8 +80,9 @@ class Instance(object):
 
     def __str__(self):
         return reduce(
-            lambda x, y: x+y,
-            map(unicode, [self.__class__, " ", self.json()]))
+            lambda x, y: x + y,
+            map(unicode,
+                [self.__class__, " ", self.json()]))
 
     def __repr__(self):
         return str(self)
@@ -101,14 +102,15 @@ class Instance(object):
         else:
             source_str = self.source.json()
 
-        return {'id': self.id,
-                'alias': self.alias,
-                'name': self.name,
-                'ip': self.ip,
-                'provider': self.provider.name,
-                'size': size_str,
-                'source': source_str
-            }
+        return {
+            'id': self.id,
+            'alias': self.alias,
+            'name': self.name,
+            'ip': self.ip,
+            'provider': self.provider.name,
+            'size': size_str,
+            'source': source_str
+        }
 
 
 class AWSInstance(Instance):
@@ -162,21 +164,22 @@ class OSInstance(Instance):
         if not self.size:
             self.size = self._get_flavor_for_instance(node)
 
-
     def _get_source_volume(self, node, driver):
         """
         Returns None or OSVolume
         """
         # Do not check for volume-as-source if no volume is attached.
-        attachments = node.extra.get('attachments',{})
+        attachments = node.extra.get('attachments', {})
         if not attachments:
-            attachments = node.extra.get('os-extended-volumes:volumes_attached', {})
+            attachments = node.extra.get(
+                'os-extended-volumes:volumes_attached', {})
         if not attachments:
             attachments = node.extra.get('volumes_attached')
         if not attachments:
             return None
         try:
-            volume = self._test_node_is_booted_volume(driver, node, attachments)
+            volume = self._test_node_is_booted_volume(driver, node,
+                                                      attachments)
         except BaseHTTPError:
             return None
         if not volume:
@@ -192,18 +195,21 @@ class OSInstance(Instance):
         """
         instance_id = node.id
         if not attachments:
-            attachments = node.extra['object'].get('os-extended-volumes:volumes_attached')
+            attachments = node.extra['object'].get(
+                'os-extended-volumes:volumes_attached')
         for volume in attachments:
             volume_id = volume.get('id')
             volume = driver._connection.ex_get_volume(volume_id)
             if not volume:
-                logger.info("[BADDATA] Volume %s listed in 'attached_volumes' but did not"
-                            " return a volume" % volume_id)
+                logger.info(
+                    "[BADDATA] Volume %s listed in 'attached_volumes' but did not"
+                    " return a volume" % volume_id)
                 continue
             volume_attachment_data = volume.extra['attachments']
             if not volume_attachment_data:
-                logger.info("[BADDATA] Volume %s listed in 'attached_volumes' but did not"
-                            " return attachment data." % volume_id)
+                logger.info(
+                    "[BADDATA] Volume %s listed in 'attached_volumes' but did not"
+                    " return attachment data." % volume_id)
                 continue
             for attach_data in volume_attachment_data:
                 if attach_data['serverId'] == instance_id:
@@ -225,8 +231,8 @@ class OSInstance(Instance):
             image_id = node.extra.get('image_id')
         if not image_id:
             return None
-        machine = self.provider.machineCls.lookup_cached_machine(image_id,
-                self.provider.identifier)
+        machine = self.provider.machineCls.lookup_cached_machine(
+            image_id, self.provider.identifier)
         if not machine:
             machine = MockMachine(node.extra['imageId'], self.provider)
         return machine
@@ -234,7 +240,7 @@ class OSInstance(Instance):
     def _get_flavor_for_instance(self, node):
         #Step 1, pure-cache lookup
         size = self.provider.sizeCls.lookup_size(node.extra['flavorId'],
-                self.provider)
+                                                 self.provider)
         if not size:
             size = MockSize(node.extra['flavorId'], self.provider)
         return size

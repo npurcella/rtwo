@@ -17,55 +17,71 @@ from libcloud.utils.py3 import urlquote, b
 
 from threepio import logger
 
+
 class Esh_EC2NodeDriver(EC2NodeDriver):
     """
     Amazon EC2 Node Driver
     """
-
     def _get_attachment_set(self, element):
         """
         TEST
         """
         attachment_set = {}
         for elem in element:
-            for key in ['volumeId', 'instanceId', 'device', 'status', 'attachTime']:
+            for key in [
+                    'volumeId', 'instanceId', 'device', 'status', 'attachTime'
+            ]:
                 value = findtext(element=elem, xpath=key, namespace=NAMESPACE)
                 if value:
                     attachment_set[key] = value
         if attachment_set.get('attachTime', None):
             if '.' in attachment_set['attachTime']:
-                attach_date = datetime.strptime(attachment_set['attachTime'], '%Y-%m-%dT%H:%M:%S.%fZ')
+                attach_date = datetime.strptime(attachment_set['attachTime'],
+                                                '%Y-%m-%dT%H:%M:%S.%fZ')
             else:
-                attach_date = datetime.strptime(attachment_set['attachTime'], '%Y-%m-%dT%H:%M:%SZ')
+                attach_date = datetime.strptime(attachment_set['attachTime'],
+                                                '%Y-%m-%dT%H:%M:%SZ')
             attachment_set['attachTime'] = attach_date
         return attachment_set
 
     def _to_volumes(self, element):
-        element_volumes = findall(element=element, xpath='volumeSet/item', namespace=NAMESPACE)
+        element_volumes = findall(element=element,
+                                  xpath='volumeSet/item',
+                                  namespace=NAMESPACE)
         return [self._to_volume(volume) for volume in element_volumes]
 
     def _to_volume(self, element, name=None):
-        element_as = findall(element=element, xpath='attachmentSet/item', namespace=NAMESPACE)
+        element_as = findall(element=element,
+                             xpath='attachmentSet/item',
+                             namespace=NAMESPACE)
         volume = {}
-        for key in ['volumeId', 'size', 'createTime', 'status', 'attachmentSet']:
-            volume[key] = findtext(element=element, xpath=key, namespace=NAMESPACE)
+        for key in [
+                'volumeId', 'size', 'createTime', 'status', 'attachmentSet'
+        ]:
+            volume[key] = findtext(element=element,
+                                   xpath=key,
+                                   namespace=NAMESPACE)
         if name is None:
             name = volume['volumeId']
         svolume = StorageVolume(id=volume['volumeId'],
                                 name=name,
                                 size=int(volume['size']),
                                 driver=self)
-        svolume.extra = {'createTime': datetime.strptime(volume['createTime'],
-                                                         '%Y-%m-%dT%H:%M:%S.%fZ'),
-                         'status': volume['status'],
-                         'attachmentSet': self._get_attachment_set(element_as)}
+        svolume.extra = {
+            'createTime':
+            datetime.strptime(volume['createTime'], '%Y-%m-%dT%H:%M:%S.%fZ'),
+            'status':
+            volume['status'],
+            'attachmentSet':
+            self._get_attachment_set(element_as)
+        }
         return svolume
 
     def list_volumes(self):
         """
         Eucalyptus specific implementation of list_volumes.
         """
-        params = {'Action' : 'DescribeVolumes'}
+        params = {'Action': 'DescribeVolumes'}
         element = self.connection.request(self.path, params).object
         volumes = self._to_volumes(element)
         return volumes
@@ -82,15 +98,16 @@ class Esh_EC2NodeDriver(EC2NodeDriver):
         """
         if type(filter_by) is not dict or type(query) is not dict:
             return None
-        for (idx,(filter_name,filter_values)) in enumerate(filter_by.items()):
+        for (idx, (filter_name,
+                   filter_values)) in enumerate(filter_by.items()):
             #Add the new filter by name
-            filter_str = 'Filter.%s.Name' % (idx+1)
+            filter_str = 'Filter.%s.Name' % (idx + 1)
             query[filter_str] = filter_name
             if type(filter_values) != list:
                 filter_values = [filter_values]
             for value_idx, value in enumerate(filter_values):
                 #Add each value found for the filter
-                filter_str = 'Filter.%s.Value.%s' % (idx+1, value_idx+1)
+                filter_str = 'Filter.%s.Value.%s' % (idx + 1, value_idx + 1)
                 query[filter_str] = value
         return query
 
@@ -108,6 +125,5 @@ class Esh_EC2NodeDriver(EC2NodeDriver):
         query = {'Action': 'DescribeImages'}
         self._build_filter_query(query, filter_by)
         images = self._to_images(
-            self.connection.request(self.path, query).object
-        )
+            self.connection.request(self.path, query).object)
         return images

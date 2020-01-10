@@ -1,6 +1,5 @@
 """
 Atmosphere service identity.
-
 """
 from abc import ABCMeta, abstractmethod
 
@@ -28,7 +27,6 @@ class BaseIdentity(object):
 
 
 class Identity(BaseIdentity):
-
     def __init__(self, provider, key=None, secret=None, user=None, **kwargs):
         if issubclass(type(provider), self.provider):
             self.providers.append(provider)
@@ -42,13 +40,14 @@ class Identity(BaseIdentity):
 
     def get_username(self):
         return self.credentials['key']
+
     def get_groupname(self):
         return self.credentials['key']
+
     def __repr__(self):
         return '%s (%s) Credentials: %s' % (self.__class__,
-                                            self.credentials.get('key',''),
+                                            self.credentials.get('key', ''),
                                             self.credentials.keys())
-
 
 
 class AWSIdentity(Identity):
@@ -64,6 +63,7 @@ class EucaIdentity(Identity):
 class OSIdentity(Identity):
 
     provider = OSProvider
+
 
 class MockIdentity(Identity):
 

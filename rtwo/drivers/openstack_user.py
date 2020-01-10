@@ -12,12 +12,12 @@ from novaclient.exceptions import NotFound as NovaNotFound
 
 from threepio import logger
 
-from rtwo.drivers.common import (
-    _connect_to_nova_by_auth, _connect_to_glance_by_auth,
-    _connect_to_keystone_auth_v3, _connect_to_keystone_v3,
-    _connect_to_glance, _connect_to_keystone,
-    _connect_to_nova, _connect_to_swift,
-    find)
+from rtwo.drivers.common import (_connect_to_nova_by_auth,
+                                 _connect_to_glance_by_auth,
+                                 _connect_to_keystone_auth_v3,
+                                 _connect_to_keystone_v3, _connect_to_glance,
+                                 _connect_to_keystone, _connect_to_nova,
+                                 _connect_to_swift, find)
 
 
 class UserManager():
@@ -33,7 +33,7 @@ class UserManager():
             'username': lc_driver.key,
             'password': lc_driver.secret,
             'tenant_name': lc_driver._ex_tenant_name,
-            'auth_url': lc_driver._ex_force_auth_url.replace('/tokens',''),
+            'auth_url': lc_driver._ex_force_auth_url.replace('/tokens', ''),
             'region_name': lc_driver._ex_force_service_region
         }
         lc_driver_args.update(kwargs)
@@ -41,15 +41,17 @@ class UserManager():
         return manager
 
     def __init__(self, *args, **kwargs):
-        self.keystone, self.nova, self.swift, self.glance = self.new_connection(*args, **kwargs)
-        auth_version = kwargs.get('version','v2.0')
+        self.keystone, self.nova, self.swift, self.glance = self.new_connection(
+            *args, **kwargs)
+        auth_version = kwargs.get('version', 'v2.0')
         if '2.0' in auth_version:
             self.version = 2
         elif '3' in auth_version:
             self.version = 3
         else:
-            raise Exception("Could not determine a version of openstack_user based on %s" % auth_version)
-
+            raise Exception(
+                "Could not determine a version of openstack_user based on %s" %
+                auth_version)
 
     def new_connection(self, *args, **kwargs):
         if kwargs.get('version') == 'v3':
@@ -57,7 +59,9 @@ class UserManager():
                 (auth, session, token) = _connect_to_keystone_auth_v3(**kwargs)
             else:
                 (auth, session, token) = _connect_to_keystone_v3(**kwargs)
-            keystone = _connect_to_keystone(version="v3", auth=auth, session=session)
+            keystone = _connect_to_keystone(version="v3",
+                                            auth=auth,
+                                            session=session)
             glance = _connect_to_glance_by_auth(auth=auth, session=session)
             nova = _connect_to_nova_by_auth(auth=auth, session=session)
             swift = _connect_to_swift(session=session)
@@ -67,7 +71,7 @@ class UserManager():
             glance = _connect_to_glance(keystone, **kwargs)
             nova_args = kwargs.copy()
             nova_args['version'] = 'v2.0'
-            nova_args['auth_url'] = nova_args['auth_url'].replace('v3','v2.0')
+            nova_args['auth_url'] = nova_args['auth_url'].replace('v3', 'v2.0')
             nova = _connect_to_nova(*args, **nova_args)
             swift_args = self._get_swift_args(*args, **kwargs)
             swift = _connect_to_swift(*args, **swift_args)
@@ -81,9 +85,8 @@ class UserManager():
         swift_args['tenant_name'] = kwargs.get('tenant_name')
         if "v2" in kwargs.get("auth_url"):
             swift_args['auth_version'] = 2
-        swift_args['os_options'] = {"region_name":kwargs.get("region_name")}
+        swift_args['os_options'] = {"region_name": kwargs.get("region_name")}
         return swift_args
-
 
     def build_nova(self, username, password, project_name, *args, **kwargs):
         """
@@ -128,47 +131,51 @@ class UserManager():
                         self.keystone.username)
             return None
 
-    def build_security_group(self, username, password, project_name,
-             security_group_name, protocol_list, rebuild=False, *args, **kwargs):
+    def build_security_group(self,
+                             username,
+                             password,
+                             project_name,
+                             security_group_name,
+                             protocol_list,
+                             rebuild=False,
+                             *args,
+                             **kwargs):
         """
         Given a working set of credentials and a list of protocols/rules
           Protocol/Rule: ("TCP/UDP/ICMP", from_port, to_port[, CIDR_to_allow])
-
         Retrieve existing security group and ensure each rule is created if it
         doesnt already exist.
-
         rebuild: If True, delete all rules before adding rules in protocol_list
         """
-        sec_group = self.find_security_group(
-                username, password, project_name, security_group_name)
+        sec_group = self.find_security_group(username, password, project_name,
+                                             security_group_name)
 
         if not sec_group:
-            raise Exception("No security group named %s found for %s"
-                        % (security_group_name, username))
+            raise Exception("No security group named %s found for %s" %
+                            (security_group_name, username))
 
         if rebuild:
             rule_ids = [rule['id'] for rule in sec_group.rules]
-            self.delete_security_group_rules(
-                username, password, project_name, security_group_name, rule_ids)
-
+            self.delete_security_group_rules(username, password, project_name,
+                                             security_group_name, rule_ids)
 
         # Add the rule, grab updated security group
-        self.add_security_group_rules(
-            username, password, project_name, security_group_name, protocol_list)
+        self.add_security_group_rules(username, password, project_name,
+                                      security_group_name, protocol_list)
 
         #Show the new security group (with added rules)
-        sec_group = self.find_security_group(
-                username, password, project_name, security_group_name)
+        sec_group = self.find_security_group(username, password, project_name,
+                                             security_group_name)
         return sec_group
 
     def delete_security_group_rules(self, username, password, project_name,
-            security_group_name, rules):
+                                    security_group_name, rules):
         """
         rules - a list of rules in the form:
                 [rule_id1, rule_id2, rule_id3, ...]
         """
-        sec_group = self.find_security_group(username, password,
-                                             project_name, security_group_name)
+        sec_group = self.find_security_group(username, password, project_name,
+                                             security_group_name)
         nova = self.build_nova(username, password, project_name)
         for rule_id in rules:
             try:
@@ -177,17 +184,17 @@ class UserManager():
                 pass
 
     def add_security_group_rules(self, username, password, project_name,
-            security_group_name, rule_list):
+                                 security_group_name, rule_list):
         """
         rules - a list of rules in the form:
                 [(protocol, from_port, to_port, [CIDR]),
                  ...]
         """
-        sec_group = self.find_security_group(username, password,
-                                             project_name, security_group_name)
+        sec_group = self.find_security_group(username, password, project_name,
+                                             security_group_name)
         if not sec_group:
-            raise Exception("Could not find security group %s for project %s"
-                            % (security_group_name, project_name))
+            raise Exception("Could not find security group %s for project %s" %
+                            (security_group_name, project_name))
         nova = self.build_nova(username, password, project_name)
         for protocol in rule_list:
             self.add_rule_to_group(nova, protocol, sec_group)
@@ -204,44 +211,46 @@ class UserManager():
         else:
             raise Exception("Rule tuple did not match expected output:"
                             " (protocol, from_port, to_port, [CIDR])")
-        if not self.find_rule(security_group, ip_protocol,
-                          from_port, to_port):
+        if not self.find_rule(security_group, ip_protocol, from_port, to_port):
             try:
                 nova.security_group_rules.create(security_group.id,
                                                  ip_protocol=ip_protocol,
                                                  from_port=from_port,
                                                  to_port=to_port,
                                                  cidr=cidr)
-            except OverLimit, ole:
+            except OverLimit as ole:
                 if 'Security group rule already exists' in ole.message:
                     return True
                 logger.exception(ole.__dict__)
                 raise
         return True
 
-
     def find_security_group(self, username, password, project_name,
                             security_group_name):
         nova = self.build_nova(username, password, project_name)
         try:
-            sec_group = nova.security_groups.find(description=security_group_name)
+            sec_group = nova.security_groups.find(
+                description=security_group_name)
             return sec_group
         except NovaNotFound:
             sec_group = nova.security_groups.list()
         if sec_group:
             return sec_group[0]
         else:
-            raise Exception("Could not find any security groups for user %s"
-                            % username)
-
+            raise Exception("Could not find any security groups for user %s" %
+                            username)
 
     def list_security_groups(self, username, password, project_name):
         nova = self.build_nova(username, password, project_name)
         sec_groups = nova.security_groups.list()
         return sec_groups
 
-    def find_rule(self, security_group, ip_protocol,
-                  from_port, to_port, cidr=None):
+    def find_rule(self,
+                  security_group,
+                  ip_protocol,
+                  from_port,
+                  to_port,
+                  cidr=None):
         ip_protocol = ip_protocol.lower()
         for rule in security_group.rules:
             if rule['ip_protocol'] and rule['ip_protocol'].lower() == ip_protocol\
@@ -252,13 +261,17 @@ class UserManager():
                     return True
                 if rule['from_port'] == None\
                         and rule['to_port'] >= to_port:
-                            # The ICMP rule on grizzly-openstack is:
-                            # {'from_port': -1, ...} but on havana it is:
-                            # {'from_port': None, ...} so check for both
+                    # The ICMP rule on grizzly-openstack is:
+                    # {'from_port': -1, ...} but on havana it is:
+                    # {'from_port': None, ...} so check for both
                     return True
         return False
 
-    def add_usergroup(self, username, password, createUser=True, adminRole=False):
+    def add_usergroup(self,
+                      username,
+                      password,
+                      createUser=True,
+                      adminRole=False):
         """
         Create a group for this user only
         then create the user
@@ -273,7 +286,7 @@ class UserManager():
             user = self.get_user(username)
 
         logger.debug("Assign project:%s Member:%s Role:%s" %
-                    (username, username, adminRole))
+                     (username, username, adminRole))
 
         #Create project for user/group
         project = self.get_project(username)
@@ -312,49 +325,58 @@ class UserManager():
                 return self.keystone_projects().create(groupname)
             else:
                 return self.keystone_projects().create(groupname, domain)
-        except Exception, e:
+        except Exception as e:
             logger.exception(e)
             raise
 
-    def add_project_membership(self, groupname, username, rolename, domain_name=None):
+    def add_project_membership(self,
+                               groupname,
+                               username,
+                               rolename,
+                               domain_name=None):
         """
         Adds user(name) to group(name) with role(name)
-
         Invalid groupname, username, rolename :
             raise keystoneclient.exceptions.NotFound
         """
         # Check for previous entry
-        existing_grant = self.check_membership(groupname, username, rolename, domain_name)
+        existing_grant = self.check_membership(groupname, username, rolename,
+                                               domain_name)
         if existing_grant:
             return existing_grant
         # Create a new entry
         try:
             user_kwargs = project_kwargs = {}
             if domain_name and self.keystone_version() != 2:
-                user_kwargs.update({'domain_id':domain_name})
-                project_kwargs.update({'domain_id':domain_name})
+                user_kwargs.update({'domain_id': domain_name})
+                project_kwargs.update({'domain_id': domain_name})
             user = self.get_user(username, **user_kwargs)
             project = self.get_project(groupname, **project_kwargs)
             new_role = self.get_role(rolename)
             if self.keystone_version() == 3:
-                role_grant = self.keystone.roles.grant(
-                    user=user, project=project, role=new_role)
+                role_grant = self.keystone.roles.grant(user=user,
+                                                       project=project,
+                                                       role=new_role)
             else:
                 role_grant = project.add_user(user, new_role)
             return role_grant
-        except KeystoneConflict, keystone_err:
+        except KeystoneConflict as keystone_err:
             if 'already has role' in keystone_err.message:
                 return None
             raise
-        except Exception, e:
+        except Exception as e:
             logger.exception(e)
             raise
 
-    def check_membership(self, projectname, username, rolename, domain_name=None):
+    def check_membership(self,
+                         projectname,
+                         username,
+                         rolename,
+                         domain_name=None):
         user_kwargs = project_kwargs = {}
         if domain_name:
-            user_kwargs.update({'domain_id':domain_name})
-            project_kwargs.update({'domain_id':domain_name})
+            user_kwargs.update({'domain_id': domain_name})
+            project_kwargs.update({'domain_id': domain_name})
         user = self.get_user(username, **user_kwargs)
         project = self.get_project(projectname, **project_kwargs)
         if not user or not project:
@@ -365,18 +387,22 @@ class UserManager():
         if self.keystone_version() == 2:
             existing_roles = user.list_roles(project)
         elif self.keystone_version() == 3:
-            existing_roles = self.keystone.roles.list(user=user, project=project)
+            existing_roles = self.keystone.roles.list(user=user,
+                                                      project=project)
 
         for role in existing_roles:
             if role.name == rolename:
                 return role
         return None
 
-    def create_user(self, username, password=None, project=None, domain='default'):
+    def create_user(self,
+                    username,
+                    password=None,
+                    project=None,
+                    domain='default'):
         """
         Create a new user
         Invalid groupname : raise keystoneclient.exceptions.NotFound
-
         project - The tenant/project to assign user when creating (opt)
         """
         account_data = {
@@ -422,9 +448,8 @@ class UserManager():
         for role in roles:
             try:
                 project.remove_user(user, role)
-            except NovaNotFound, NotFound:
+            except NovaNotFound as NotFound:
                 continue
-
 
     def delete_project_member(self, groupname, username, adminRole=False):
         """
@@ -450,7 +475,7 @@ class UserManager():
             logger.debug('Error - %s: User-role combination does not exist' %
                          no_role_for_user)
             return True
-        except Exception, e:
+        except Exception as e:
             logger.exception(e)
             raise
 
@@ -538,4 +563,3 @@ class UserManager():
 
     def list_users(self):
         return self.keystone.users.list()
-

@@ -1,6 +1,5 @@
 """
 Atmosphere service driver.
-
 Driver classes define interfaces and implement functionality using providers.
 """
 from abc import ABCMeta, abstractmethod
@@ -143,33 +142,31 @@ class LibcloudDriver(BaseDriver, VolumeDriver, APIFilterMixin):
     """
     Provides direct access to the libcloud methods and data.
     """
-
     def __init__(self, provider, identity, **provider_credentials):
         if provider is None or identity is None:
             raise MissingArgsException(
                 'LibcloudDriver is Missing Required Identity and/or Provider.')
         self.identity = identity
         self.provider = provider
-        self._connection = self.provider.get_driver(
-                                            self.identity,
-                                            **provider_credentials)
+        self._connection = self.provider.get_driver(self.identity,
+                                                    **provider_credentials)
 
     def list_instances(self, *args, **kwargs):
         return self._connection.list_nodes()
 
     def list_machines(self, *args, **kwargs):
-        logger.debug("Call made to list_machines: %s - %s"
-                     % (self.provider.identifier,
-                     self.identity.credentials['key']))
+        logger.debug(
+            "Call made to list_machines: %s - %s" %
+            (self.provider.identifier, self.identity.credentials['key']))
         return self._connection.list_images()
 
     def _get_size(self, alias):
         return self._connection.ex_get_size(alias)
 
     def list_sizes(self, *args, **kwargs):
-        logger.debug("Call made to list_sizes: %s - %s"
-                     % (self.provider.identifier,
-                     self.identity.credentials['key']))
+        logger.debug(
+            "Call made to list_sizes: %s - %s" %
+            (self.provider.identifier, self.identity.credentials['key']))
         return self._connection.list_sizes()
 
     def list_locations(self, *args, **kwargs):
@@ -209,15 +206,15 @@ class LibcloudDriver(BaseDriver, VolumeDriver, APIFilterMixin):
 class EshDriver(LibcloudDriver, MetaMixin):
     """
     """
-
     @classmethod
     def settings_init(cls):
         raise ServiceException('Settings init not available for this class')
 
     def __init__(self, provider, identity, **provider_credentials):
-        super(EshDriver, self).__init__(provider, identity, **provider_credentials)
-        if not(isinstance(provider, self.providerCls)
-           and isinstance(identity, self.identityCls)):
+        super(EshDriver, self).__init__(provider, identity,
+                                        **provider_credentials)
+        if not (isinstance(provider, self.providerCls)
+                and isinstance(identity, self.identityCls)):
             raise ServiceException('Wrong Provider or Identity')
 
     def is_valid(self):
@@ -288,13 +285,11 @@ class EshDriver(LibcloudDriver, MetaMixin):
         logger.debug(str(args))
         logger.debug(str(kwargs))
         return self.provider.instanceCls(
-            super(EshDriver, self).create_instance(*args, **kwargs),
-            self)
+            super(EshDriver, self).create_instance(*args, **kwargs), self)
 
     def deploy_instance(self, *args, **kwargs):
         return self.provider.instanceCls(
-            super(EshDriver, self).deploy_instance(*args, **kwargs),
-            self)
+            super(EshDriver, self).deploy_instance(*args, **kwargs), self)
 
     def reset_network(self, *args, **kwargs):
         return super(EshDriver, self).reset_network(*args, **kwargs)
@@ -319,8 +314,7 @@ class EshDriver(LibcloudDriver, MetaMixin):
 
     def boot_volume(self, *args, **kwargs):
         return self.provider.instanceCls(
-                super(EshDriver, self).boot_volume(*args, **kwargs),
-                self)
+            super(EshDriver, self).boot_volume(*args, **kwargs), self)
 
     def list_volumes(self, *args, **kwargs):
         return self.provider.volumeCls.get_volumes(
@@ -349,8 +343,10 @@ class MockDriver(EshDriver, InstanceActionMixin):
         return True
 
     def __init__(self, provider, identity, **provider_credentials):
-        super(MockDriver, self).__init__(provider, identity, **provider_credentials)
+        super(MockDriver, self).__init__(provider, identity,
+                                         **provider_credentials)
         #Set connection && force_service_region
+
 
 class OSDriver(EshDriver, InstanceActionMixin):
     """
@@ -383,7 +379,9 @@ class OSDriver(EshDriver, InstanceActionMixin):
                 'username/password/tenant_name fields')
         OSProvider.set_meta()
         provider = OSProvider()
-        identity = OSIdentity(provider, username, password,
+        identity = OSIdentity(provider,
+                              username,
+                              password,
                               ex_tenant_name=tenant_name,
                               **prov_credentials)
         driver = cls(provider, identity)
@@ -406,13 +404,16 @@ class OSDriver(EshDriver, InstanceActionMixin):
                 'username/password/tenant_name fields')
         OSProvider.set_meta()
         provider = OSProvider()
-        identity = OSIdentity(provider, username, password,
+        identity = OSIdentity(provider,
+                              username,
+                              password,
                               ex_tenant_name=tenant_name)
         driver = cls(provider, identity)
         return driver
 
     def __init__(self, provider, identity, **provider_credentials):
-        super(OSDriver, self).__init__(provider, identity, **provider_credentials)
+        super(OSDriver, self).__init__(provider, identity,
+                                       **provider_credentials)
         #Set connection && force_service_region
         self._connection._ex_force_service_region =\
         self._connection.connection.service_region =\
@@ -422,7 +423,6 @@ class OSDriver(EshDriver, InstanceActionMixin):
         """
         This openstack specific implementation caches machine lists
         using tenant_name as the identifier
-
         Return the MachineClass representation of a libcloud NodeImage
         """
         #TODO: I don't like this implementation.. -Steve
@@ -434,8 +434,7 @@ class OSDriver(EshDriver, InstanceActionMixin):
             identifier = self.provider.identitifier
         return self.provider.machineCls.get_cached_machines(
             identifier,
-            super(EshDriver,self).list_machines, *args, **kwargs)
-
+            super(EshDriver, self).list_machines, *args, **kwargs)
 
     def deploy_init_to(self, *args, **kwargs):
         """
@@ -469,17 +468,15 @@ class OSDriver(EshDriver, InstanceActionMixin):
         do_centos = "yum install -y emacs vim-enhanced wget make "\
                     + "gcc gettext texinfo autoconf automake python-simplejson"
         script_deps = LoggedScriptDeployment(
-            "distro_cat=`cat /etc/*-release`\n"
-            + "if [[ $distro_cat == *Ubuntu* ]]; then\n"
-            + do_ubuntu
-            + "\nelse if [[ $distro_cat == *CentOS* ]];then\n"
-            + do_centos
-            + "\nfi\nfi",
+            "distro_cat=`cat /etc/*-release`\n" +
+            "if [[ $distro_cat == *Ubuntu* ]]; then\n" + do_ubuntu +
+            "\nelse if [[ $distro_cat == *CentOS* ]];then\n" + do_centos +
+            "\nfi\nfi",
             name="./deploy_deps.sh",
             logfile="/var/log/atmo/deploy.log")
         script_wget = LoggedScriptDeployment(
-            "wget -O %s %s%s" % (atmo_init, settings.SERVER_URL,
-                                 server_atmo_init),
+            "wget -O %s %s%s" %
+            (atmo_init, settings.SERVER_URL, server_atmo_init),
             name='./deploy_wget_atmoinit.sh',
             logfile='/var/log/atmo/deploy.log')
         script_chmod = LoggedScriptDeployment(
@@ -493,15 +490,10 @@ class OSDriver(EshDriver, InstanceActionMixin):
         awesome_atmo_call += " --server=%s --user_id=%s"
         awesome_atmo_call += " --token=%s --name=\"%s\""
         awesome_atmo_call += " --vnc_license=%s"
-        awesome_atmo_call %= (
-            atmo_init,
-            "instance_service_v1",
-            settings.INSTANCE_SERVICE_URL,
-            settings.SERVER_URL,
-            username,
-            instance_token,
-            instance.name,
-            settings.ATMOSPHERE_VNC_LICENSE)
+        awesome_atmo_call %= (atmo_init, "instance_service_v1",
+                              settings.INSTANCE_SERVICE_URL,
+                              settings.SERVER_URL, username, instance_token,
+                              instance.name, settings.ATMOSPHERE_VNC_LICENSE)
         #kludge: weirdness without the str cast...
         str_awesome_atmo_call = str(awesome_atmo_call)
         #logger.debug(isinstance(str_awesome_atmo_call, basestring))
@@ -513,12 +505,10 @@ class OSDriver(EshDriver, InstanceActionMixin):
             "rm -rf ~/deploy_*",
             name='./deploy_remove_scripts.sh',
             logfile='/var/log/atmo/deploy.log')
-        msd = MultiStepDeployment([script_init,
-                                   script_deps,
-                                   script_wget,
-                                   script_chmod,
-                                   script_atmo_init,
-                                   script_rm_scripts])
+        msd = MultiStepDeployment([
+            script_init, script_deps, script_wget, script_chmod,
+            script_atmo_init, script_rm_scripts
+        ])
         kwargs.update({'deploy': msd})
 
         private_key = "/opt/dev/atmosphere/extras/ssh/id_rsa"
@@ -554,14 +544,12 @@ class OSDriver(EshDriver, InstanceActionMixin):
         #Get the libcloud node, not the eshInstance
         if hasattr(instance, '_node'):
             node = instance._node
-        self._connection.ex_deploy_to_node(node,
-                                           *args, **kwargs)
+        self._connection.ex_deploy_to_node(node, *args, **kwargs)
         return True
 
     def deploy_instance(self, *args, **kwargs):
         """
         Deploy instance.
-
         NOTE: This is blocking and uses the blocking create_node.
         """
         if not kwargs.get('deploy'):
@@ -619,7 +607,8 @@ class OSDriver(EshDriver, InstanceActionMixin):
         return self._connection.neutron_associate_ip(instance, *args, **kwargs)
 
     def _del_floating_ip(self, instance, *args, **kwargs):
-        return self._connection.neutron_disassociate_ip(instance, *args, **kwargs)
+        return self._connection.neutron_disassociate_ip(
+            instance, *args, **kwargs)
 
     def _clean_floating_ip(self, *args, **kwargs):
         return self._connection.ex_clean_floating_ip(**kwargs)
@@ -629,11 +618,20 @@ class OSDriver(EshDriver, InstanceActionMixin):
         status = instance.extra['status']
         task = instance.extra['task']
         power = instance.extra['power']
-        if status in ['paused', 'error', 'shelved_offloaded', 'migrating',
-                'suspended','stopped','shutoff',]:
+        if status in [
+                'paused',
+                'error',
+                'shelved_offloaded',
+                'migrating',
+                'suspended',
+                'stopped',
+                'shutoff',
+        ]:
             return True
-        if task in ['suspending','shutting-off',
-                    ]:
+        if task in [
+                'suspending',
+                'shutting-off',
+        ]:
             return True
         return False
 
@@ -642,17 +640,19 @@ class OSDriver(EshDriver, InstanceActionMixin):
         status = instance.extra['status']
         task = instance.extra['task']
         power = instance.extra['power']
-        if status in ['active','build','resize']:
+        if status in ['active', 'build', 'resize']:
             if task in ['deleting', 'suspending']:
-                result=False
-            result=True
-        elif task in ['resuming', 'powering-on',
-                    'verify-resize', 'resize_reverting', 'resize_confirming']:
-            result=True
+                result = False
+            result = True
+        elif task in [
+                'resuming', 'powering-on', 'verify-resize', 'resize_reverting',
+                'resize_confirming'
+        ]:
+            result = True
         else:
-            result=False
-        logger.info("Instance: %s Status: %s-%s Active:%s" % (instance.id,
-            status, task, result))
+            result = False
+        logger.info("Instance: %s Status: %s-%s Active:%s" %
+                    (instance.id, status, task, result))
         return result
 
 
@@ -680,24 +680,17 @@ class AWSDriver(EshDriver):
         awesome_atmo_call = "sudo %s --service_type=%s --service_url=%s"
         awesome_atmo_call += " --server=%s --user_id=%s --token=%s"
         awesome_atmo_call += " --name=%s &> %s"
-        awesome_atmo_call %= (
-            atmo_init,
-            "instance_service_v1",
-            settings.INSTANCE_SERVICE_URL,
-            settings.SERVER_URL,
-            username,
-            instance_token,
-            kwargs.get('name', ''),
-            '/var/log/atmo_init_full.err')
+        awesome_atmo_call %= (atmo_init, "instance_service_v1",
+                              settings.INSTANCE_SERVICE_URL,
+                              settings.SERVER_URL, username, instance_token,
+                              kwargs.get('name',
+                                         ''), '/var/log/atmo_init_full.err')
         logger.debug(awesome_atmo_call)
         str_awesome_atmo_call = str(awesome_atmo_call)
         #kludge: weirdness without the str cast...
         script_atmo_init = ScriptDeployment(str_awesome_atmo_call)
         private_key = ("/opt/dev/atmosphere/extras/ssh/id_rsa")
-        scripts = [script_deps,
-                   script_wget,
-                   script_chmod,
-                   script_atmo_init]
+        scripts = [script_deps, script_wget, script_chmod, script_atmo_init]
         for s in scripts:
             logger.debug(s.name)
             s.name = s.name.replace('/root', '/home/ubuntu')
@@ -716,7 +709,6 @@ class AWSDriver(EshDriver):
         # send_instance_email(username, instance.id, instance.ip,
         # created, username)
         return instance
-
 
     def create_volume(self, *args, **kwargs):
         if 'description' in kwargs:

@@ -16,11 +16,11 @@ class Eucalyptus_Esh_NodeDriver(EucNodeDriver):
     """
     Eucalyptus 2.x node driver for esh.
     """
-
     def _is_name(self, name):
-        for n in ['admin', 'edwins', 'edwin', 'sgregory',
-                  'esteve', 'jmatt', 'nirav',
-                  'nmatasci', 'sangeeta', 'aedmonds']:
+        for n in [
+                'admin', 'edwins', 'edwin', 'sgregory', 'esteve', 'jmatt',
+                'nirav', 'nmatasci', 'sangeeta', 'aedmonds'
+        ]:
             if n == name:
                 return name
         return False
@@ -38,9 +38,8 @@ class Eucalyptus_Esh_NodeDriver(EucNodeDriver):
         return ([], machine_name)
 
     def _drop_numbers(self, machine_name):
-        return '_'.join(filter(lambda x:
-                               not str.isdigit(x),
-                               machine_name.split('_')))
+        return '_'.join(
+            filter(lambda x: not str.isdigit(x), machine_name.split('_')))
 
     def _drop_filetype(self, machine_name):
         new_machine_name = machine_name.replace('.manifest.xml', '')
@@ -68,59 +67,78 @@ class Eucalyptus_Esh_NodeDriver(EucNodeDriver):
         """
         Ignore any ramdisks/kernels, unless set explicitly
         """
-        image_list = super(Eucalyptus_Esh_NodeDriver, self).list_images(
-            location, ex_image_ids)
+        image_list = super(Eucalyptus_Esh_NodeDriver,
+                           self).list_images(location, ex_image_ids)
         if emi_only:
-            image_list = [img for img in image_list
-                          if 'eri' not in img.id and 'eki' not in img.id]
+            image_list = [
+                img for img in image_list
+                if 'eri' not in img.id and 'eki' not in img.id
+            ]
         return image_list
 
     def _to_image(self, element):
-        n = NodeImage(
-            id=findtext(element=element, xpath='imageId', namespace=NAMESPACE),
-            name=self.parse_machine_name(findtext(element=element,
-                                                  xpath='imageLocation',
-                                                  namespace=NAMESPACE)),
-            driver=self.connection.driver,
-            extra={
-                'location': findtext(element=element, xpath='imageLocation',
-                                                  namespace=NAMESPACE),
-                'state': findattr(element=element, xpath="imageState",
+        n = NodeImage(id=findtext(element=element,
+                                  xpath='imageId',
                                   namespace=NAMESPACE),
-                'ownerid': findattr(element=element, xpath="imageOwnerId",
-                                    namespace=NAMESPACE),
-                'owneralias': findattr(element=element,
-                                       xpath="imageOwnerAlias",
-                                       namespace=NAMESPACE),
-                'ispublic': findattr(element=element,
-                                     xpath="isPublic",
-                                     namespace=NAMESPACE),
-                'architecture': findattr(element=element,
-                                         xpath="architecture",
-                                         namespace=NAMESPACE),
-                'imagetype': findattr(element=element,
-                                      xpath="imageType",
-                                      namespace=NAMESPACE),
-                'platform': findattr(element=element,
-                                     xpath="platform",
-                                     namespace=NAMESPACE),
-                'kernelid': findattr(element=element,
-                                     xpath="kernelId",
-                                     namespace=NAMESPACE),
-                'ramdiskid': findattr(element=element,
-                                      xpath="ramdiskId",
-                                      namespace=NAMESPACE),
-                'rootdevicetype': findattr(element=element,
-                                           xpath="rootDeviceType",
-                                           namespace=NAMESPACE),
-                'virtualizationtype': findattr(
-                    element=element, xpath="virtualizationType",
-                    namespace=NAMESPACE),
-                'hypervisor': findattr(element=element,
-                                       xpath="hypervisor",
-                                       namespace=NAMESPACE)
-            }
-        )
+                      name=self.parse_machine_name(
+                          findtext(element=element,
+                                   xpath='imageLocation',
+                                   namespace=NAMESPACE)),
+                      driver=self.connection.driver,
+                      extra={
+                          'location':
+                          findtext(element=element,
+                                   xpath='imageLocation',
+                                   namespace=NAMESPACE),
+                          'state':
+                          findattr(element=element,
+                                   xpath="imageState",
+                                   namespace=NAMESPACE),
+                          'ownerid':
+                          findattr(element=element,
+                                   xpath="imageOwnerId",
+                                   namespace=NAMESPACE),
+                          'owneralias':
+                          findattr(element=element,
+                                   xpath="imageOwnerAlias",
+                                   namespace=NAMESPACE),
+                          'ispublic':
+                          findattr(element=element,
+                                   xpath="isPublic",
+                                   namespace=NAMESPACE),
+                          'architecture':
+                          findattr(element=element,
+                                   xpath="architecture",
+                                   namespace=NAMESPACE),
+                          'imagetype':
+                          findattr(element=element,
+                                   xpath="imageType",
+                                   namespace=NAMESPACE),
+                          'platform':
+                          findattr(element=element,
+                                   xpath="platform",
+                                   namespace=NAMESPACE),
+                          'kernelid':
+                          findattr(element=element,
+                                   xpath="kernelId",
+                                   namespace=NAMESPACE),
+                          'ramdiskid':
+                          findattr(element=element,
+                                   xpath="ramdiskId",
+                                   namespace=NAMESPACE),
+                          'rootdevicetype':
+                          findattr(element=element,
+                                   xpath="rootDeviceType",
+                                   namespace=NAMESPACE),
+                          'virtualizationtype':
+                          findattr(element=element,
+                                   xpath="virtualizationType",
+                                   namespace=NAMESPACE),
+                          'hypervisor':
+                          findattr(element=element,
+                                   xpath="hypervisor",
+                                   namespace=NAMESPACE)
+                      })
         return n
 
     def _to_node(self, api_node, groups=None, owner=None):
@@ -132,6 +150,7 @@ class Eucalyptus_Esh_NodeDriver(EucNodeDriver):
             node.public_ips.append(node.extra.get('dns_name', '0.0.0.0'))
             node.private_ips.append(node.extra.get('private_dns', '0.0.0.0'))
             return node
+
         node = super(Eucalyptus_Esh_NodeDriver, self)._to_node(api_node)
         if owner:
             node.extra['ownerId'] = owner
@@ -141,8 +160,9 @@ class Eucalyptus_Esh_NodeDriver(EucNodeDriver):
     def _get_attachment_set(self, element):
         attachment_set = {}
         for elem in element:
-            for key in ['volumeId', 'instanceId', 'device',
-                        'status', 'attachTime']:
+            for key in [
+                    'volumeId', 'instanceId', 'device', 'status', 'attachTime'
+            ]:
                 value = findtext(element=elem, xpath=key, namespace=NAMESPACE)
                 if value:
                     attachment_set[key] = value
@@ -158,12 +178,15 @@ class Eucalyptus_Esh_NodeDriver(EucNodeDriver):
 
     def _to_volume(self, element, name=None):
         element_as = findall(element=element,
-                             xpath='attachmentSet/item', namespace=NAMESPACE)
+                             xpath='attachmentSet/item',
+                             namespace=NAMESPACE)
         volume = {}
-        for key in ['volumeId', 'size', 'createTime',
-                    'status', 'attachmentSet']:
+        for key in [
+                'volumeId', 'size', 'createTime', 'status', 'attachmentSet'
+        ]:
             volume[key] = findtext(element=element,
-                                   xpath=key, namespace=NAMESPACE)
+                                   xpath=key,
+                                   namespace=NAMESPACE)
         if name is None:
             name = volume['volumeId']
         svolume = StorageVolume(id=volume['volumeId'],
@@ -180,7 +203,8 @@ class Eucalyptus_Esh_NodeDriver(EucNodeDriver):
         svolume.extra = {
             'createTime': created_time,
             'status': volume['status'],
-            'attachmentSet': [self._get_attachment_set(element_as)]}
+            'attachmentSet': [self._get_attachment_set(element_as)]
+        }
         return svolume
 
     def _getNextAvailableDevice(self, instance_id):
@@ -190,15 +214,17 @@ class Eucalyptus_Esh_NodeDriver(EucNodeDriver):
         relative to /dev/
         """
         def _attached_to_instance(vol):
-            attached_instance_id = vol.extra.get(
-                'attachmentSet', [{}])[0].get('instanceId', '')
+            attached_instance_id = vol.extra.get('attachmentSet', [{}])[0].get(
+                'instanceId', '')
             return attached_instance_id == instance_id
 
         # get all volumes that are attached to this instance
         # add devices to list
         attached_volumes = filter(_attached_to_instance, self.list_volumes())
-        used_devices = [vol.extra.get('attachmentSet', [{}])[0].get('device')
-                        for vol in attached_volumes]
+        used_devices = [
+            vol.extra.get('attachmentSet', [{}])[0].get('device')
+            for vol in attached_volumes
+        ]
 
         logger.debug('List of used devices:%s' % used_devices)
 
@@ -218,16 +244,19 @@ class Eucalyptus_Esh_NodeDriver(EucNodeDriver):
 
     def _to_volumes(self, element):
         element_volumes = findall(element=element,
-                                  xpath='volumeSet/item', namespace=NAMESPACE)
+                                  xpath='volumeSet/item',
+                                  namespace=NAMESPACE)
         volumes = []
         for vol in element_volumes:
             volumes.append(self._to_volume(vol))
         return volumes
 
     def _to_nodes(self, object, xpath, groups=None, owner=None):
-        return [self._to_node(el, groups=groups, owner=owner)
-                for el in object.findall(fixxpath(xpath=xpath,
-                                                  namespace=NAMESPACE))]
+        return [
+            self._to_node(el, groups=groups,
+                          owner=owner) for el in object.findall(
+                              fixxpath(xpath=xpath, namespace=NAMESPACE))
+        ]
 
     def list_nodes(self, ex_node_ids=None):
         """
@@ -238,13 +267,15 @@ class Eucalyptus_Esh_NodeDriver(EucNodeDriver):
             params.update(self._pathlist('InstanceId', ex_node_ids))
         elem = self.connection.request(self.path, params=params).object
         nodes = []
-        for rs in findall(element=elem, xpath='reservationSet/item',
+        for rs in findall(element=elem,
+                          xpath='reservationSet/item',
                           namespace=NAMESPACE):
             owner = findtext(element=rs, xpath='ownerId', namespace=NAMESPACE)
-            groups = [g.findtext('')
-                      for g in findall(element=rs,
-                                       xpath='groupSet/item/groupId',
-                                       namespace=NAMESPACE)]
+            groups = [
+                g.findtext('') for g in findall(element=rs,
+                                                xpath='groupSet/item/groupId',
+                                                namespace=NAMESPACE)
+            ]
             nodes += self._to_nodes(rs, 'instancesSet/item', groups, owner)
 
         nodes_elastic_ips_mappings = self.ex_describe_addresses(nodes)
@@ -272,16 +303,17 @@ class Eucalyptus_Esh_NodeDriver(EucNodeDriver):
     def attach_volume(self, node, volume, device=None):
         if device is None:
             device = self._getNextAvailableDevice(node.id)
-        result = super(Eucalyptus_Esh_NodeDriver, self).attach_volume(node,
-                                                                    volume,
-                                                                    device)
+        result = super(Eucalyptus_Esh_NodeDriver,
+                       self).attach_volume(node, volume, device)
         logger.debug('Result of attaching device to %s:%s' % (device, result))
         return result
 
     def create_volume(self, size, name, location='bespin', *args, **kwargs):
-        params = {'Action': 'CreateVolume',
-                  'Size': str(size),
-                  'AvailabilityZone': location, }
+        params = {
+            'Action': 'CreateVolume',
+            'Size': str(size),
+            'AvailabilityZone': location,
+        }
         volume_obj = self.connection.request(self.path, params=params).object
         volume = self._to_volume(volume_obj, name=name)
         logger.debug(volume)
@@ -292,8 +324,10 @@ class Eucalyptus_Esh_NodeDriver(EucNodeDriver):
         """
         Eucalyptus 2 specific implementation of list_sizes.
         """
-        params = {'Action': 'DescribeAvailabilityZones',
-                  'ZoneName.1': 'verbose'}
+        params = {
+            'Action': 'DescribeAvailabilityZones',
+            'ZoneName.1': 'verbose'
+        }
         element = self.connection.request(self.path, params).object
         sizes = self._to_sizes(element)
         return sizes
@@ -317,15 +351,21 @@ class Eucalyptus_Esh_NodeDriver(EucNodeDriver):
             # ['0058', '0215', '2', '4096', '10']
             # ['remaining', 'total', 'cpu', 'ram', 'disk']
             id = s[0].text.split()[1]
-            size_info = {'id': id,
-                         'name': id,
-                         'ram': int(pieces[3]),
-                         'disk': int(pieces[4]),
-                         'bandwidth': 0,
-                         'price': 0}
+            size_info = {
+                'id': id,
+                'name': id,
+                'ram': int(pieces[3]),
+                'disk': int(pieces[4]),
+                'bandwidth': 0,
+                'price': 0
+            }
             node_size = NodeSize(driver=self, **size_info)
-            node_size.extra = {'cpu': int(pieces[2]),
-                               'occupancy': {'remaining': int(pieces[0]),
-                                             'total': int(pieces[1])}}
+            node_size.extra = {
+                'cpu': int(pieces[2]),
+                'occupancy': {
+                    'remaining': int(pieces[0]),
+                    'total': int(pieces[1])
+                }
+            }
             sizes.append(node_size)
         return sizes

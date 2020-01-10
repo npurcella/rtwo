@@ -1,6 +1,5 @@
 """
 Atmosphere service machine.
-
 """
 from abc import ABCMeta
 
@@ -8,12 +7,12 @@ from rtwo.models.provider import AWSProvider, EucaProvider, OSProvider
 
 from threepio import logger
 
+
 class BaseMachine(object):
     __metaclass__ = ABCMeta
 
 
 class MockMachine(BaseMachine):
-
     def __init__(self, image_id, provider):
         self.id = image_id
         self.alias = image_id
@@ -22,10 +21,12 @@ class MockMachine(BaseMachine):
         self.provider = provider
 
     def json(self):
-        return {'id': self.id,
-                'alias': self.alias,
-                'name': self.name,
-                'provider': self.provider.name}
+        return {
+            'id': self.id,
+            'alias': self.alias,
+            'name': self.name,
+            'provider': self.provider.name
+        }
 
 
 class Machine(BaseMachine):
@@ -101,7 +102,8 @@ class Machine(BaseMachine):
         return cls.create_machine(cls.provider, lc_image, identifier)
 
     @classmethod
-    def get_cached_machines(cls, identifier, lc_list_images_method, *args, **kwargs):
+    def get_cached_machines(cls, identifier, lc_list_images_method, *args,
+                            **kwargs):
         """
         Identifier - Used to identify the specific provider being used:
         ex: "iPlant Eucalyptus", "Openstack 1", "Openstack 2"
@@ -115,7 +117,10 @@ class Machine(BaseMachine):
             cls.lc_images = lc_list_images_method(*args, **kwargs)
             logger.debug("Caching %s machines for identifier:%s" %
                          (len(cls.lc_images), identifier))
-        return [cls.get_cached_machine(lc_image, identifier) for lc_image in cls.lc_images]
+        return [
+            cls.get_cached_machine(lc_image, identifier)
+            for lc_image in cls.lc_images
+        ]
 
     def reset(self):
         Machine.reset()
@@ -132,18 +137,20 @@ class Machine(BaseMachine):
 
     def __str__(self):
         return reduce(
-            lambda x, y: x+y,
-            map(unicode, [self.__class__, " ", self.json()])
-        )
+            lambda x, y: x + y,
+            map(unicode,
+                [self.__class__, " ", self.json()]))
 
     def __repr__(self):
         return str(self)
 
     def json(self):
-        return {'id': self.id,
-                'alias': self.alias,
-                'name': self.name,
-                'provider': self.provider.name}
+        return {
+            'id': self.id,
+            'alias': self.alias,
+            'name': self.name,
+            'provider': self.provider.name
+        }
 
 
 class AWSMachine(Machine):

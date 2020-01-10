@@ -1,5 +1,4 @@
 """ rtwo.settings
-
     Try to find usable settings. First try to use atmosphere's secrets,
     if installed. Otherwise try to use test_settings.
 """
@@ -24,10 +23,11 @@ except:
         except:
             settings = None
 
-
 if not settings:
+
     class Settings(object):
         pass
+
     settings = Settings()
     settings.EUCA_ADMIN_KEY = ""
     settings.EUCA_ADMIN_SECRET = ""
@@ -44,5 +44,6 @@ def set_settings(settings):
     SERVER_URL = settings.SERVER_URL
     INSTANCE_SERVICE_URL = settings.INSTANCE_SERVICE_URL
     ATMOSPHERE_VNC_LICENSE = settings.ATMOSPHERE_VNC_LICENSE
+
 
 set_settings(settings)

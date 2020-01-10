@@ -1,7 +1,6 @@
 """
 UserManager:
     Remote Eucalyptus Admin controls..
-
 User, BooleanField, StringList
     These XML parsing classes belong to euca_admin.py,
     and can be found on the Cloud Controller
@@ -34,10 +33,10 @@ class UserManager():
     connection = None
 
     def __init__(self, *args, **kwargs):
-        key = kwargs.get('key','')
-        secret = kwargs.get('secret','')
-        url = kwargs.get('url','')
-        path = kwargs.get('account_path','/services/Accounts')
+        key = kwargs.get('key', '')
+        secret = kwargs.get('secret', '')
+        url = kwargs.get('url', '')
+        path = kwargs.get('account_path', '/services/Accounts')
 
         self.admin_key = key
         self.admin_secret = secret
@@ -49,8 +48,10 @@ class UserManager():
         self.connection = boto.connect_ec2(
             aws_access_key_id=self.admin_key,
             aws_secret_access_key=self.admin_secret,
-            is_secure=False, region=region,
-            port=parsed.port, path=self.account_path)
+            is_secure=False,
+            region=region,
+            port=parsed.port,
+            path=self.account_path)
         self.connection.APIVersion = 'eucalyptus'
 
     def delete_user(self, username):
@@ -59,8 +60,9 @@ class UserManager():
         returns True on success
         """
         try:
-            reply = self.connection.get_object(
-                'DeleteUser', {'UserName': username}, BooleanResponse)
+            reply = self.connection.get_object('DeleteUser',
+                                               {'UserName': username},
+                                               BooleanResponse)
         except EC2ResponseError:
             logger.info("User does not exist")
             return False
@@ -72,9 +74,11 @@ class UserManager():
         Adds new user, with 'username' and 'email' to eucalyptus.
         returns True on success
         """
-        reply = self.connection.get_object(
-            'AddUser', {'UserName': username, 'Email': email,
-                        'Admin': adminUser}, BooleanResponse)
+        reply = self.connection.get_object('AddUser', {
+            'UserName': username,
+            'Email': email,
+            'Admin': adminUser
+        }, BooleanResponse)
         return reply and reply.reply == 'true'
 
     def get_keys(self, userList):
@@ -84,11 +88,12 @@ class UserManager():
         userDict = self.get_users(userList)
         user_keys_dict = {}
         for username in userDict.keys():
-                userObj = userDict[username]
-                user_keys_dict[username] = {
-                    'username': username,
-                    'access_key': userObj['access_key'],
-                    'secret_key': userObj['secret_key']}
+            userObj = userDict[username]
+            user_keys_dict[username] = {
+                'username': username,
+                'access_key': userObj['access_key'],
+                'secret_key': userObj['secret_key']
+            }
         return user_keys_dict
 
     def get_users(self, userList):
@@ -97,8 +102,8 @@ class UserManager():
         """
         params = {}
         self.connection.build_list_params(params, userList, 'UserNames')
-        euca_list = self.connection.get_list(
-            'DescribeUsers', params, [('euca:item', User)])
+        euca_list = self.connection.get_list('DescribeUsers', params,
+                                             [('euca:item', User)])
         return self.userListDict(euca_list)
 
     def userListDict(self, euca_list):
@@ -108,30 +113,31 @@ class UserManager():
         """
         userDict = {}
         for user in euca_list:
-		logger.info(user.__dict__)
-                userDict[user.user_userName] = {
-                    'username': user.user_userName,
-                    'access_key': user.user_accessKey,
-                    'secret_key': user.user_secretKey,
-                    'certificateSerial': user.user_certificateSerial,
-                    'certificateCode': user.user_certificateCode,
-                    'confirmationCode': user.user_confirmationCode,
-                    'confirmed': user.user_confirmed,
-                    'admin': user.user_admin,
-                    'enabled': user.user_enabled,
-                    'email': user.user_email,
-                }
+            logger.info(user.__dict__)
+            userDict[user.user_userName] = {
+                'username': user.user_userName,
+                'access_key': user.user_accessKey,
+                'secret_key': user.user_secretKey,
+                'certificateSerial': user.user_certificateSerial,
+                'certificateCode': user.user_certificateCode,
+                'confirmationCode': user.user_confirmationCode,
+                'confirmed': user.user_confirmed,
+                'admin': user.user_admin,
+                'enabled': user.user_enabled,
+                'email': user.user_email,
+            }
         return userDict
 
     #Useful calls you will want
     def get_key(self, username):
-            return self.get_keys([username])[username]
+        return self.get_keys([username])[username]
 
     def get_all_users(self):
-            return self.get_users([])
+        return self.get_users([])
 
     def get_user(self, username):
-            return self.get_users([username])[username]
+        return self.get_users([username])[username]
+
 
 #NOTE: I DO NOT OWN THE RIGHTS TO ANY OF THE CODE BELOW!
 # The functions below are for used to parse the XML response
@@ -144,11 +150,18 @@ class User():
     The user object stores the XML response for DescribeUsers
     This class was pulled from euca_admin/users.py
     """
-
-    def __init__(self, userName=None, email="N/A", certificateCode=None,
-                 confirmationCode=None, accessKey=None, secretKey=None,
-                 confirmed=False, admin=False, enabled=False,
-                 distinguishedName=None, certificateSerial=None):
+    def __init__(self,
+                 userName=None,
+                 email="N/A",
+                 certificateCode=None,
+                 confirmationCode=None,
+                 accessKey=None,
+                 secretKey=None,
+                 confirmed=False,
+                 admin=False,
+                 enabled=False,
+                 distinguishedName=None,
+                 certificateSerial=None):
         self.user_userName = userName
         self.user_email = email
         self.user_distinguishedName = distinguishedName
@@ -231,7 +244,7 @@ class BooleanResponse:
 
     def __repr__(self):
         if self.error:
-            print 'RESPONSE %s' % self.error
+            print('RESPONSE %s' % self.error)
             sys.exit(1)
         else:
             return 'RESPONSE %s' % self.reply

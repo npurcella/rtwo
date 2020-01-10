@@ -29,13 +29,13 @@ from rtwo.version import version_str as rtwo_version
 
 
 class LoggedScriptDeployment(ScriptDeployment):
-
     def __init__(self, script, name=None, delete=False, logfile=None):
         """
         Use this for client-side logging
         """
-        super(LoggedScriptDeployment, self).__init__(
-            script, name=name, delete=delete)
+        super(LoggedScriptDeployment, self).__init__(script,
+                                                     name=name,
+                                                     delete=delete)
         if logfile:
             self.script = self.script + " &> %s" % logfile
         #logger.info(self.script)
@@ -46,11 +46,11 @@ class LoggedScriptDeployment(ScriptDeployment):
         """
         node = super(LoggedScriptDeployment, self).run(node, client)
         if self.stdout:
-            logger.debug('%s (%s)STDOUT: %s' % (node.id, self.name,
-                                                self.stdout))
+            logger.debug('%s (%s)STDOUT: %s' %
+                         (node.id, self.name, self.stdout))
         if self.stderr:
-            logger.warn('%s (%s)STDERR: %s' % (node.id, self.name,
-                                               self.stderr))
+            logger.warn('%s (%s)STDERR: %s' %
+                        (node.id, self.name, self.stderr))
         return node
 
 
@@ -64,6 +64,7 @@ def _connect_to_swift(*args, **kwargs):
         swift = swift_client.Connection(*args, **kwargs)
     return swift
 
+
 def _connect_to_sahara(*args, **kwargs):
     """
     Recommend authenticating sahara with session auth
@@ -71,7 +72,9 @@ def _connect_to_sahara(*args, **kwargs):
     try:
         if "session" in kwargs:
             session = kwargs.get("session")
-            sahara = sahara_client.Client("1.1", session=session, endpoint_type="internalURL")
+            sahara = sahara_client.Client("1.1",
+                                          session=session,
+                                          endpoint_type="internalURL")
         else:
             sahara = sahara_client.Client(*args, **kwargs)
     except RuntimeError as client_failure:
@@ -79,6 +82,7 @@ def _connect_to_sahara(*args, **kwargs):
             return None
         raise
     return sahara
+
 
 def _connect_to_heat(*args, **kwargs):
     """
@@ -96,6 +100,7 @@ def _connect_to_heat(*args, **kwargs):
         raise
     return heat
 
+
 def _connect_to_neutron(*args, **kwargs):
     """
     """
@@ -103,37 +108,45 @@ def _connect_to_neutron(*args, **kwargs):
     neutron.format = 'json'
     return neutron
 
-def _connect_to_keystone_password(
-        auth_url, username, password,
-        project_name, user_domain_name=None, project_domain_name=None, **kwargs):
+
+def _connect_to_keystone_password(auth_url,
+                                  username,
+                                  password,
+                                  project_name,
+                                  user_domain_name=None,
+                                  project_domain_name=None,
+                                  **kwargs):
     """
     Given a username and password,
     authenticate with keystone to get an unscoped token
     Exchange token to receive an auth,session,token scoped to a specific project_name and domain_name.
     """
-    password_auth = identity.Password(
-        auth_url=auth_url,
-        username=username, password=password, project_name=project_name,
-        user_domain_name=user_domain_name, project_domain_name=project_domain_name)
+    password_auth = identity.Password(auth_url=auth_url,
+                                      username=username,
+                                      password=password,
+                                      project_name=project_name,
+                                      user_domain_name=user_domain_name,
+                                      project_domain_name=project_domain_name)
     password_sess = Session(auth=password_auth)
     password_token = password_sess.get_token()
     return (password_auth, password_sess, password_token)
 
-def _connect_to_keystone_auth_v3(
-        auth_url, auth_token, project_name, domain_name, **kwargs):
+
+def _connect_to_keystone_auth_v3(auth_url, auth_token, project_name,
+                                 domain_name, **kwargs):
     """
     Give a auth_url and auth_token,
     authenticate with keystone version 3 to get a scoped_token,
     Exchange token to receive an auth, session, token scoped to a sepcific project_name and domain_name.
     """
-    token_auth = identity.Token(
-        auth_url=auth_url,
-        token=auth_token,
-        project_domain_id=domain_name,
-        project_name=project_name)
+    token_auth = identity.Token(auth_url=auth_url,
+                                token=auth_token,
+                                project_domain_id=domain_name,
+                                project_name=project_name)
     token_sess = Session(auth=token_auth)
     token_token = token_sess.get_token()
     return (token_auth, token_sess, token_token)
+
 
 def _connect_to_keystone_v2(**kwargs):
     """
@@ -147,33 +160,39 @@ def _connect_to_keystone_v2(**kwargs):
     keystone = ks_client.Client(**kwargs)
     return keystone
 
-def _connect_to_keystone_v3(
-        auth_url, username, password,
-        project_name, **kwargs):
+
+def _connect_to_keystone_v3(auth_url, username, password, project_name,
+                            **kwargs):
     """
     Given a username and password,
     authenticate with keystone to get an unscoped token
     Exchange token to receive an auth,session,token scoped to a specific project_name and domain_name.
     """
     domain_name = kwargs.pop('domain_name', 'default')
-    project_domain_name = kwargs.pop('project_domain_name',
-                            kwargs.pop('project_domain_id', domain_name))
+    project_domain_name = kwargs.pop(
+        'project_domain_name', kwargs.pop('project_domain_id', domain_name))
     user_domain_name = kwargs.pop('user_domain_name',
-                            kwargs.pop('user_domain_id', domain_name))
-    return _connect_to_keystone_password(auth_url, username, password, project_name, user_domain_name, project_domain_name, **kwargs)
+                                  kwargs.pop('user_domain_id', domain_name))
+    return _connect_to_keystone_password(auth_url, username, password,
+                                         project_name, user_domain_name,
+                                         project_domain_name, **kwargs)
 
-def _token_to_keystone_scoped_project(
-        auth_url, token,
-        project_name, domain_name="default"):
+
+def _token_to_keystone_scoped_project(auth_url,
+                                      token,
+                                      project_name,
+                                      domain_name="default"):
     """
     Given an auth_url and scoped/unscoped token:
     Create an auth,session and token for a specific project_name and domain_name (Required to access a serviceCatalog for neutron/nova/etc!)
     """
-    auth = v3.Token(auth_url=auth_url, token=token, project_name=project_name, project_domain_id=domain_name)
+    auth = v3.Token(auth_url=auth_url,
+                    token=token,
+                    project_name=project_name,
+                    project_domain_id=domain_name)
     sess = Session(auth=auth)
     token = sess.get_token()
     return (auth, sess, token)
-
 
 
 def _connect_to_keystone(*args, **kwargs):
@@ -185,7 +204,9 @@ def _connect_to_keystone(*args, **kwargs):
     try:
         raise Exception()
     except:
-        logger.exception("Deprecated: keystoneclient is going away after legacy clouds have been upgraded -- convert to openstack-client/sdk")
+        logger.exception(
+            "Deprecated: keystoneclient is going away after legacy clouds have been upgraded -- convert to openstack-client/sdk"
+        )
 
     version = kwargs.get('version', 'v2.0')
     if version == 'v2.0':
@@ -215,7 +236,8 @@ def _connect_to_openstack_sdk(*args, **kwargs):
     identity_version = kwargs.get('identity_api_version', 2)
     if identity_version == 2:
         return None
-    utils.enable_logging(True, stream=sys.stdout) # TODO: stream this to _not_ stdout
+    utils.enable_logging(
+        True, stream=sys.stdout)  # TODO: stream this to _not_ stdout
     user_profile = profile.Profile()
     user_profile.set_region(profile.Profile.ALL, kwargs.get('region_name'))
     if 'project_name' not in kwargs and 'tenant_name' in kwargs:
@@ -223,22 +245,21 @@ def _connect_to_openstack_sdk(*args, **kwargs):
 
     user_profile.set_version('identity', 'v%s' % identity_version)
     user_profile.set_interface('identity', 'admin')
-    user_agent = "rtwo/%s" % (rtwo_version(),)
-    stack_sdk = openstack_sdk.Connection(
-        user_agent=user_agent,
-        profile=user_profile,
-        **kwargs
-    )
+    user_agent = "rtwo/%s" % (rtwo_version(), )
+    stack_sdk = openstack_sdk.Connection(user_agent=user_agent,
+                                         profile=user_profile,
+                                         **kwargs)
     return stack_sdk
+
 
 def _connect_to_glance_by_auth(*args, **kwargs):
     """
     Use this for new Openstack Clouds
     """
     version = '2'
-    glance = glanceclient.Client(version,
-                                 **kwargs)
+    glance = glanceclient.Client(version, **kwargs)
     return glance
+
 
 def _connect_to_glance(keystone, version='2', *args, **kwargs):
     """
@@ -247,12 +268,12 @@ def _connect_to_glance(keystone, version='2', *args, **kwargs):
     """
     if type(keystone) == keystoneclient.v2_0.client.Client:
         glance_service = keystone.services.find(type='image')
-        glance_endpoint_obj = keystone.endpoints.find(service_id=glance_service.id)
+        glance_endpoint_obj = keystone.endpoints.find(
+            service_id=glance_service.id)
         glance_endpoint = glance_endpoint_obj.publicurl
     else:
         glance_endpoint = keystone.session.get_endpoint(
-            service_type='image',
-            endpoint_type='publicURL')
+            service_type='image', endpoint_type='publicURL')
     auth_token = keystone.session.get_token()
     if type(version) == str:
         if '3' in version:
@@ -264,6 +285,7 @@ def _connect_to_glance(keystone, version='2', *args, **kwargs):
                                  token=auth_token)
     return glance
 
+
 def _connect_to_nova(*args, **kwargs):
     kwargs = copy.deepcopy(kwargs)
     version = kwargs.pop('version', '2')
@@ -274,34 +296,37 @@ def _connect_to_nova(*args, **kwargs):
     password = kwargs.pop('password')
     tenant_name = kwargs.pop('tenant_name')
     region_name = kwargs.pop('region_name')
-    project_domain_id = kwargs.pop('project_domain_id','default')
-    user_domain_id = kwargs.pop('user_domain_id','default')
-    endpoint_type = kwargs.pop('endpoint_type','publicURL')
-    service_type = kwargs.pop('service_type','compute')
+    project_domain_id = kwargs.pop('project_domain_id', 'default')
+    user_domain_id = kwargs.pop('user_domain_id', 'default')
+    endpoint_type = kwargs.pop('endpoint_type', 'publicURL')
+    service_type = kwargs.pop('service_type', 'compute')
     if version == 3:
-        (password_auth, sess, token) = _connect_to_keystone_password(
-            auth_url, username, password, tenant_name,
-            user_domain_id, project_domain_id)
+        (password_auth, sess,
+         token) = _connect_to_keystone_password(auth_url, username, password,
+                                                tenant_name, user_domain_id,
+                                                project_domain_id)
         return _connect_to_nova_by_auth(auth=password_auth, session=sess)
     # Legacy cloud path:
     version = api_versions.APIVersion("2.0")
     kwargs['http_log_debug'] = True
-    nova = nova_client.Client(version,
-                              username,
-                              password,
-                              tenant_name,
-                              auth_url=auth_url,
-                              region_name=region_name,
-                              #extensions = self.extensions,
-                              *args, no_cache=True, **kwargs)
+    nova = nova_client.Client(
+        version,
+        username,
+        password,
+        tenant_name,
+        auth_url=auth_url,
+        region_name=region_name,
+        #extensions = self.extensions,
+        *args,
+        no_cache=True,
+        **kwargs)
     return nova
 
 
 def _connect_to_nova_by_auth(*args, **kwargs):
     VERSION = kwargs.get('version', 2)
     if 'session' not in kwargs:
-        (auth, sess, token) = _connect_to_keystone_v3(
-            *args, **kwargs)
+        (auth, sess, token) = _connect_to_keystone_v3(*args, **kwargs)
     else:
         sess = kwargs['session']
     nova = client.Client(VERSION, session=sess)
@@ -311,7 +336,6 @@ def _connect_to_nova_by_auth(*args, **kwargs):
 def findall(manager, *args, **kwargs):
     """
         Find all items with attributes matching ``**kwargs``.
-
         This isn't very efficient: it loads the entire list then filters on
         the Python side.
     """
@@ -320,8 +344,7 @@ def findall(manager, *args, **kwargs):
 
     for obj in manager.list():
         try:
-            if all(getattr(obj, attr) == value
-                   for (attr, value) in searches):
+            if all(getattr(obj, attr) == value for (attr, value) in searches):
                 found.append(obj)
         except AttributeError:
             continue
@@ -329,20 +352,18 @@ def findall(manager, *args, **kwargs):
 
 
 def find(manager, **kwargs):
-        """
+    """
         Find a single item with attributes matching ``**kwargs``.
-
         This isn't very efficient: it loads the entire list then filters on
         the Python side.
         """
-        rl = findall(manager, **kwargs)
-        num = len(rl)
+    rl = findall(manager, **kwargs)
+    num = len(rl)
 
-        if num == 0:
-            msg = "No %s matching %s." % (manager.resource_class.__name__,
-                                          kwargs)
-            raise exceptions.NotFound(404, msg)
-        elif num > 1:
-            raise exceptions.NoUniqueMatch
-        else:
-            return rl[0]
+    if num == 0:
+        msg = "No %s matching %s." % (manager.resource_class.__name__, kwargs)
+        raise exceptions.NotFound(404, msg)
+    elif num > 1:
+        raise exceptions.NoUniqueMatch
+    else:
+        return rl[0]
